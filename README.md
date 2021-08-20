@@ -230,7 +230,6 @@ def load_data(data_path, spec_len=128):
     # 读取音频
     wav, sr = librosa.load(data_path, sr=16000)
     spec_mag = librosa.feature.melspectrogram(y=wav, sr=sr, hop_length=256).astype(np.float32)
-    spec_mag = spec_mag[:spec_len]
     mean = np.mean(spec_mag, 0, keepdims=True)
     std = np.std(spec_mag, 0, keepdims=True)
     spec_mag = (spec_mag - mean) / (std + 1e-5)
@@ -392,7 +391,6 @@ def load_data(data_path, spec_len=128):
     # 读取音频
     wav, sr = librosa.load(data_path, sr=16000)
     spec_mag = librosa.feature.melspectrogram(y=wav, sr=sr, hop_length=256).astype(np.float32)
-    spec_mag = spec_mag[:spec_len]
     mean = np.mean(spec_mag, 0, keepdims=True)
     std = np.std(spec_mag, 0, keepdims=True)
     spec_mag = (spec_mag - mean) / (std + 1e-5)
