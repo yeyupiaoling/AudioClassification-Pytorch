@@ -18,6 +18,7 @@ add_arg('num_workers',      int,    4,                        '读取数据的�
 add_arg('num_epoch',        int,    50,                       '训练的轮数')
 add_arg('num_classes',      int,    10,                       '分类的类别数量')
 add_arg('learning_rate',    float,  1e-3,                     '初始学习率的大小')
+add_arg('lr_step',          int,    10,                       '学习率衰减步数')
 add_arg('input_shape',      str,    '(None, 1, 128, 128)',    '数据输入的形状')
 add_arg('train_list_path',  str,    'dataset/train_list.txt', '训练数据的数据列表路径')
 add_arg('test_list_path',   str,    'dataset/test_list.txt',  '测试数据的数据列表路径')
@@ -62,7 +63,7 @@ def train(args):
                                  lr=args.learning_rate,
                                  weight_decay=5e-4)
     # 获取学习率衰减函数
-    scheduler = StepLR(optimizer, step_size=args.learning_rate, gamma=0.8, verbose=True)
+    scheduler = StepLR(optimizer, step_size=args.lr_step, gamma=0.8, verbose=True)
 
     # 获取损失函数
     loss = torch.nn.CrossEntropyLoss()
