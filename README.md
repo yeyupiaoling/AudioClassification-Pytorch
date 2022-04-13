@@ -168,7 +168,7 @@ def train(args):
                                  lr=args.learning_rate,
                                  weight_decay=5e-4)
     # 获取学习率衰减函数
-    scheduler = StepLR(optimizer, step_size=args.learning_rate, gamma=0.8, verbose=True)
+    scheduler = StepLR(optimizer, step_size=args.lr_step, gamma=0.8, verbose=True)
 
     # 获取损失函数
     loss = torch.nn.CrossEntropyLoss()
