@@ -1,7 +1,6 @@
 import argparse
 import functools
 
-import librosa
 import numpy as np
 import torch
 
@@ -11,7 +10,7 @@ from utils.utility import add_arguments
 
 parser = argparse.ArgumentParser(description=__doc__)
 add_arg = functools.partial(add_arguments, argparser=parser)
-add_arg('audio_path',       str,    'dataset/UrbanSound8K/audio/fold5/156634-5-2-5.wav', '图片路径')
+add_arg('audio_path',       str,    'dataset/UrbanSound8K/audio/fold5/156634-5-2-5.wav', '音频路径')
 add_arg('num_classes',      int,    10,                        '分类的类别数量')
 add_arg('label_list_path',  str,    'dataset/label_list.txt',  '标签列表路径')
 add_arg('model_path',       str,    'models/model.pth',        '模型保存的路径')
