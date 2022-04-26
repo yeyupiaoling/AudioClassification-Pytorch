@@ -7,7 +7,7 @@
 主要介绍libsora，PyAudio，pydub的安装，其他的依赖包根据需要自行安装。
 
 - Python 3.7
-- Pytorch 1.8.1
+- Pytorch 1.10.0
 
 ## 安装libsora
 
@@ -15,10 +15,10 @@
 
 ```shell
 pip install pytest-runner
-pip install librosa
+pip install librosa==0.9.1
 ```
 
-如果pip命令安装不成功，那就使用源码安装，下载源码：[https://github.com/librosa/librosa/releases/](https://github.com/librosa/librosa/releases/)， windows的可以下载zip压缩包，方便解压。
+**注意：** 如果pip命令安装不成功，那就使用源码安装，下载源码：[https://github.com/librosa/librosa/releases/](https://github.com/librosa/librosa/releases/)， windows的可以下载zip压缩包，方便解压。
 
 ```shell
 pip install pytest-runner
@@ -58,11 +58,12 @@ pip install pydub
 
 # 训练分类模型
 
-把音频转换成训练数据最重要的是使用了librosa，使用librosa可以很方便得到音频的梅尔频谱（Mel Spectrogram），使用的API为 `librosa.feature.melspectrogram()`，输出的是numpy值，可以直接用tensorflow训练和预测。关于梅尔频谱具体信息读者可以自行了解，跟梅尔频谱同样很重要的梅尔倒谱（MFCCs）更多用于语音识别中，对应的API为 `librosa.feature.mfcc()`。同样以下的代码，就可以获取到音频的梅尔频谱。
+把音频转换成训练数据最重要的是使用了librosa，使用librosa可以很方便得到音频的梅尔频谱（Mel Spectrogram），使用的API为 `librosa.feature.melspectrogram()`，输出的是numpy值。关于梅尔频谱具体信息读者可以自行了解，跟梅尔频谱同样很重要的梅尔倒谱（MFCCs）更多用于语音识别中，对应的API为 `librosa.feature.mfcc()`。同样以下的代码，就可以获取到音频的梅尔频谱。
 
 ```python
 wav, sr = librosa.load(data_path, sr=16000)
-spec_mag = librosa.feature.melspectrogram(y=wav, sr=sr, hop_length=256)
+features = librosa.feature.melspectrogram(y=wav, sr=sr, n_fft=400, n_mels=80, hop_length=160, win_length=400)
+features = librosa.power_to_db(features, ref=1.0, amin=1e-10, top_db=None)
 ```
 
 ## 生成数据列表
@@ -108,17 +109,23 @@ if __name__ == '__main__':
 
 ```python
 class CustomDataset(Dataset):
-    def __init__(self, data_list_path, model='train', spec_len=128):
+    def __init__(self, data_list_path, model='train', sr=16000, chunk_duration=3):
         super(CustomDataset, self).__init__()
         with open(data_list_path, 'r') as f:
             self.lines = f.readlines()
         self.model = model
-        self.spec_len = spec_len
+        self.sr = sr
+        self.chunk_duration = chunk_duration
 
     def __getitem__(self, idx):
-        audio_path, label = self.lines[idx].replace('\n', '').split('\t')
-        spec_mag = load_audio(audio_path, mode=self.model, spec_len=self.spec_len)
-        return spec_mag, np.array(int(label), dtype=np.int64)
+        try:
+            audio_path, label = self.lines[idx].replace('\n', '').split('\t')
+            spec_mag = load_audio(audio_path, mode=self.model, sr=self.sr, chunk_duration=self.chunk_duration)
+            return spec_mag, np.array(int(label), dtype=np.int64)
+        except Exception as ex:
+            print(f"[{datetime.now()}] 数据: {self.lines[idx]} 出错，错误信息: {ex}", file=sys.stderr)
+            rnd_idx = np.random.randint(self.__len__())
+            return self.__getitem__(rnd_idx)
 
     def __len__(self):
         return len(self.lines)
@@ -127,40 +134,59 @@ class CustomDataset(Dataset):
 下面是在训练时或者测试时读取音频数据，训练时对转换的梅尔频谱数据随机裁剪，如果是测试，就取前面的，最好要执行归一化。
 
 ```python
-def load_audio(audio_path, mode='train', spec_len=128):
+def load_audio(audio_path, mode='train', sr=16000, chunk_duration=3):
     # 读取音频数据
-    wav, sr = librosa.load(audio_path, sr=16000)
-    spec_mag = librosa.feature.melspectrogram(y=wav, sr=sr, hop_length=256)
+    wav, sr_ret = librosa.load(audio_path, sr=sr)
     if mode == 'train':
-        crop_start = random.randint(0, spec_mag.shape[1] - spec_len)
-        spec_mag = spec_mag[:, crop_start:crop_start + spec_len]
-    else:
-        spec_mag = spec_mag[:, :spec_len]
-    mean = np.mean(spec_mag, 0, keepdims=True)
-    std = np.std(spec_mag, 0, keepdims=True)
-    spec_mag = (spec_mag - mean) / (std + 1e-5)
-    spec_mag = spec_mag[np.newaxis, :]
-    return spec_mag
+        # 随机裁剪
+        num_wav_samples = wav.shape[0]
+        # 数据太短不利于训练
+        if num_wav_samples < sr:
+            raise Exception(f'音频长度不能小于1s，实际长度为：{(num_wav_samples / sr):.2f}s')
+        num_chunk_samples = int(chunk_duration * sr)
+        if num_wav_samples > num_chunk_samples + 1:
+            start = random.randint(0, num_wav_samples - num_chunk_samples - 1)
+            stop = start + num_chunk_samples
+            wav = wav[start:stop]
+            # 对每次都满长度的再次裁剪
+            if random.random() > 0.5:
+                wav[:random.randint(1, sr // 2)] = 0
+                wav = wav[:-random.randint(1, sr // 2)]
+    elif mode == 'eval':
+        # 为避免显存溢出，只裁剪指定长度
+        num_wav_samples = wav.shape[0]
+        num_chunk_samples = int(chunk_duration * sr)
+        if num_wav_samples > num_chunk_samples + 1:
+            wav = wav[:num_chunk_samples]
+    features = librosa.feature.melspectrogram(y=wav, sr=sr, n_fft=400, n_mels=80, hop_length=160, win_length=400)
+    features = librosa.power_to_db(features, ref=1.0, amin=1e-10, top_db=None)
+    # 归一化
+    mean = np.mean(features, 0, keepdims=True)
+    std = np.std(features, 0, keepdims=True)
+    features = (features - mean) / (std + 1e-5)
+    features = features.astype('float32')
+    return features
 ```
 
 ## 训练
 
-接着就可以开始训练模型了，创建 `train.py`。我们搭建简单的卷积神经网络，如果音频种类非常多，可以适当使用更大的卷积神经网络模型。通过把音频数据转换成梅尔频谱，数据的shape也相当于灰度图，所以为 `(1, 128, 128)`。然后定义优化方法和获取训练和测试数据。要注意 `CLASS_DIM`参数的值，这个是类别的数量，要根据你数据集中的分类数量来修改。
+接着就可以开始训练模型了，创建 `train.py`。我们搭建简单的卷积神经网络，如果音频种类非常多，可以适当使用更大的卷积神经网络模型。通过把音频数据转换成梅尔频谱。然后定义优化方法和获取训练和测试数据。要注意 `args.num_classes`参数的值，这个是类别的数量，要根据你数据集中的分类数量来修改。
 
 ```python
 def train(args):
-    # 数据输入的形状
-    input_shape = eval(args.input_shape)
     # 获取数据
-    train_dataset = CustomDataset(args.train_list_path, model='train', spec_len=input_shape[3])
-    train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
+    train_dataset = CustomDataset(args.train_list_path, model='train')
+    train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=args.num_workers)
 
-    test_dataset = CustomDataset(args.test_list_path, model='test', spec_len=input_shape[3])
-    test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, num_workers=args.num_workers)
-
+    test_dataset = CustomDataset(args.test_list_path, model='eval')
+    test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, collate_fn=collate_fn, num_workers=args.num_workers)
+    # 获取分类标签
+    with open(args.label_list_path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+        class_labels = [l.replace('\n', '') for l in lines]
     # 获取模型
     device = torch.device("cuda")
-    model = resnet34(num_classes=args.num_classes)
+    model = EcapaTdnn(num_classes=args.num_classes)
     model.to(device)
 
     # 获取优化方法
@@ -168,13 +194,22 @@ def train(args):
                                  lr=args.learning_rate,
                                  weight_decay=5e-4)
     # 获取学习率衰减函数
-    scheduler = StepLR(optimizer, step_size=args.learning_rate, gamma=0.8, verbose=True)
+    scheduler = CosineAnnealingLR(optimizer, T_max=args.num_epoch)
+
+    # 恢复训练
+    if args.resume is not None:
+        model.load_state_dict(torch.load(os.path.join(args.resume, 'model.pth')))
+        state = torch.load(os.path.join(args.resume, 'model.state'))
+        last_epoch = state['last_epoch']
+        optimizer_state = torch.load(os.path.join(args.resume, 'optimizer.pth'))
+        optimizer.load_state_dict(optimizer_state)
+        print(f'成功加载第 {last_epoch} 轮的模型参数和优化方法参数')
 
     # 获取损失函数
     loss = torch.nn.CrossEntropyLoss()
 ```
 
-最后执行训练，每100个batch打印一次训练日志，训练一轮之后执行测试和保存模型，在测试时，把每个batch的输出都统计，最后求平均值。保存的模型为预测模型，方便之后的预测使用。
+最后执行训练，每100个batch打印一次训练日志，训练一轮之后执行测试和保存模型，在测试时，把每个batch的输出都统计，最后求平均值。
 
 ```python
     for epoch in range(args.num_epoch):
@@ -191,7 +226,7 @@ def train(args):
             optimizer.step()
 
             # 计算准确率
-            output = torch.nn.functional.softmax(output)
+            output = torch.nn.functional.softmax(output, dim=-1)
             output = output.data.cpu().numpy()
             output = np.argmax(output, axis=1)
             label = label.data.cpu().numpy()
@@ -199,62 +234,56 @@ def train(args):
             accuracies.append(acc)
             loss_sum.append(los)
             if batch_id % 100 == 0:
-                print('[%s] Train epoch %d, batch: %d/%d, loss: %f, accuracy: %f' % (
-                    datetime.now(), epoch, batch_id, len(train_loader), sum(loss_sum) / len(loss_sum), sum(accuracies) / len(accuracies)))
+                print(f'[{datetime.now()}] Train epoch [{epoch}/{args.num_epoch}], batch: {batch_id}/{len(train_loader)}, '
+                      f'lr: {scheduler.get_last_lr()[0]:.8f}, loss: {sum(loss_sum) / len(loss_sum):.8f}, '
+                      f'accuracy: {sum(accuracies) / len(accuracies):.8f}')
         scheduler.step()
-        # 评估模型
-        acc = test(model, test_loader, device)
-        print('='*70)
-        print('[%s] Test %d, accuracy: %f' % (datetime.now(), epoch, acc))
-        print('='*70)
-        model_path = os.path.join(args.save_model, 'resnet34.pth')
-        if not os.path.exists(os.path.dirname(model_path)):
-            os.makedirs(os.path.dirname(model_path))
-        torch.jit.save(torch.jit.script(model), model_path)
 ```
+
+每轮训练结束之后都会执行一次评估，和保存模型。评估会出来输出准确率，还保存了混合矩阵图片，如下。
+![混合矩阵](./images/image1.png)
 
 # 预测
 
-在训练结束之后，我们得到了一个预测模型，有了预测模型，执行预测非常方便。我们使用这个模型预测音频，在执行预测之前，需要把音频转换为梅尔频谱数据，并把数据shape转换为(1, 1, 128, 128)，第一个为输入数据的batch大小，如果想多个音频一起数据，可以把他们存放在list中一起预测。最后输出的结果即为预测概率最大的标签。
+在训练结束之后，我们得到了一个模型参数文件，我们使用这个模型预测音频，在执行预测之前，需要把音频转换为梅尔频谱数据，最后输出的结果即为预测概率最大的标签。
 
 ```python
-model_path = 'models/resnet34.pth'
+parser = argparse.ArgumentParser(description=__doc__)
+add_arg = functools.partial(add_arguments, argparser=parser)
+add_arg('audio_path',       str,    'dataset/UrbanSound8K/audio/fold5/156634-5-2-5.wav', '图片路径')
+add_arg('num_classes',      int,    10,                        '分类的类别数量')
+add_arg('label_list_path',  str,    'dataset/label_list.txt',  '标签列表路径')
+add_arg('model_path',       str,    'models/model.pth',        '模型保存的路径')
+args = parser.parse_args()
+
+
+# 获取分类标签
+with open(args.label_list_path, 'r', encoding='utf-8') as f:
+    lines = f.readlines()
+class_labels = [l.replace('\n', '') for l in lines]
+# 获取模型
 device = torch.device("cuda")
-model = torch.jit.load(model_path)
+model = EcapaTdnn(num_classes=args.num_classes)
 model.to(device)
+model.load_state_dict(torch.load(args.model_path))
 model.eval()
 
 
-# 读取音频数据
-def load_data(data_path, spec_len=128):
-    # 读取音频
-    wav, sr = librosa.load(data_path, sr=16000)
-    spec_mag = librosa.feature.melspectrogram(y=wav, sr=sr, hop_length=256).astype(np.float32)
-    mean = np.mean(spec_mag, 0, keepdims=True)
-    std = np.std(spec_mag, 0, keepdims=True)
-    spec_mag = (spec_mag - mean) / (std + 1e-5)
-    spec_mag = spec_mag[np.newaxis, np.newaxis, :]
-    return spec_mag
-
-
-def infer(audio_path):
-    data = load_data(audio_path)
+def infer():
+    data = load_audio(args.audio_path, mode='infer')
+    data = data[np.newaxis, :]
     data = torch.tensor(data, dtype=torch.float32, device=device)
     # 执行预测
     output = model(data)
-    result = torch.nn.functional.softmax(output)
+    result = torch.nn.functional.softmax(output, dim=-1)
     result = result.data.cpu().numpy()
-    print(result)
     # 显示图片并输出结果最大的label
     lab = np.argsort(result)[0][-1]
-    return lab
+    print(f'音频：{args.audio_path} 的预测结果标签为：{class_labels[lab]}')
 
 
 if __name__ == '__main__':
-    # 要预测的音频文件
-    path = 'dataset/UrbanSound8K/audio/fold5/156634-5-2-5.wav'
-    label = infer(path)
-    print('音频：%s 的预测结果标签为：%d' % (path, label))
+    infer()
 ```
 
 # 其他
@@ -359,16 +388,9 @@ if __name__ == '__main__':
     crop_wav('save_audio', crop_len)
 ```
 
-创建 `infer_record.py`，这个程序是用来不断进行录音识别，录音时间之所以设置为6秒，就是要保证裁剪后的音频长度大于等于2.97秒。因为识别的时间比较短，所以我们可以大致理解为这个程序在实时录音识别。通过这个应该我们可以做一些比较有趣的事情，比如把麦克风放在小鸟经常来的地方，通过实时录音识别，一旦识别到有鸟叫的声音，如果你的数据集足够强大，有每种鸟叫的声音数据集，这样你还能准确识别是那种鸟叫。如果识别到目标鸟类，就启动程序，例如拍照等等。
+创建 `infer_record.py`，这个程序是用来不断进行录音识别，录音时间之所以设置为6秒，所以我们可以大致理解为这个程序在实时录音识别。通过这个应该我们可以做一些比较有趣的事情，比如把麦克风放在小鸟经常来的地方，通过实时录音识别，一旦识别到有鸟叫的声音，如果你的数据集足够强大，有每种鸟叫的声音数据集，这样你还能准确识别是那种鸟叫。如果识别到目标鸟类，就启动程序，例如拍照等等。
 
 ```python
-# 加载模型
-model_path = 'models/resnet34.pth'
-device = torch.device("cuda")
-model = torch.jit.load(model_path)
-model.to(device)
-model.eval()
-
 # 录音参数
 CHUNK = 1024
 FORMAT = pyaudio.paInt16
@@ -384,19 +406,6 @@ stream = p.open(format=FORMAT,
                 rate=RATE,
                 input=True,
                 frames_per_buffer=CHUNK)
-
-
-# 读取音频数据
-def load_data(data_path, spec_len=128):
-    # 读取音频
-    wav, sr = librosa.load(data_path, sr=16000)
-    spec_mag = librosa.feature.melspectrogram(y=wav, sr=sr, hop_length=256).astype(np.float32)
-    mean = np.mean(spec_mag, 0, keepdims=True)
-    std = np.std(spec_mag, 0, keepdims=True)
-    spec_mag = (spec_mag - mean) / (std + 1e-5)
-    spec_mag = spec_mag[np.newaxis, np.newaxis, :]
-    return spec_mag
-
 
 # 获取录音数据
 def record_audio():
@@ -420,29 +429,26 @@ def record_audio():
 
 # 预测
 def infer(audio_path):
-    data = load_data(audio_path)
+    data = load_audio(audio_path, mode='infer')
+    data = data[np.newaxis, :]
     data = torch.tensor(data, dtype=torch.float32, device=device)
     # 执行预测
     output = model(data)
-    result = torch.nn.functional.softmax(output)
+    result = torch.nn.functional.softmax(output, dim=-1)
     result = result.data.cpu().numpy()
-    print(result)
     # 显示图片并输出结果最大的label
     lab = np.argsort(result)[0][-1]
-    return lab
+    return class_labels[lab]
 
 
 if __name__ == '__main__':
     try:
         while True:
-            try:
-                # 加载数据
-                audio_path = record_audio()
-                # 获取预测结果
-                label = infer(audio_path)
-                print('预测的标签为：%d' % label)
-            except:
-                pass
+            # 加载数据
+            audio_path = record_audio()
+            # 获取预测结果
+            label = infer(audio_path)
+            print(f'预测的标签为：{label}')
     except Exception as e:
         print(e)
         stream.stop_stream()
