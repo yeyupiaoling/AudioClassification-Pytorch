@@ -8,6 +8,7 @@ import torch
 from sklearn.metrics import confusion_matrix
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
+from torchsummary import summary
 
 from utils.ecapa_tdnn import EcapaTdnn
 from utils.reader import CustomDataset, collate_fn
@@ -24,7 +25,7 @@ add_arg('train_list_path',  str,    'dataset/train_list.txt', '训练数据的�
 add_arg('test_list_path',   str,    'dataset/test_list.txt',  '测试数据的数据列表路径')
 add_arg('label_list_path',   str,   'dataset/label_list.txt', '标签列表路径')
 add_arg('save_model',       str,    'models/',                '模型保存的路径')
-add_arg('resume',           str,    'models/',                     '恢复训练的模型文件夹，当为None则不使用恢复模型')
+add_arg('resume',           str,    None,                     '恢复训练的模型文件夹，当为None则不使用恢复模型')
 args = parser.parse_args()
 
 
@@ -64,6 +65,7 @@ def train(args):
     device = torch.device("cuda")
     model = EcapaTdnn(num_classes=args.num_classes)
     model.to(device)
+    summary(model, (80, 98))
 
     # 获取优化方法
     optimizer = torch.optim.Adam(params=model.parameters(),

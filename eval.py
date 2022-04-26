@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader
+from torchsummary import summary
 
 from utils.ecapa_tdnn import EcapaTdnn
 from utils.reader import CustomDataset, collate_fn
@@ -33,6 +34,7 @@ def evaluate():
     device = torch.device("cuda")
     model = EcapaTdnn(num_classes=args.num_classes)
     model.to(device)
+    summary(model, (80, 98))
     model.load_state_dict(torch.load(args.model_path))
     model.eval()
 
