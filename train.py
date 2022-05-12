@@ -5,17 +5,22 @@ from datetime import datetime
 
 import numpy as np
 import torch
+import yaml
 from sklearn.metrics import confusion_matrix
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 from torchsummary import summary
 
-from utils.ecapa_tdnn import EcapaTdnn
-from utils.reader import CustomDataset, collate_fn
+from data_utils.noise_perturb import NoisePerturbAugmentor
+from data_utils.reader import CustomDataset, collate_fn
+from data_utils.speed_perturb import SpeedPerturbAugmentor
+from data_utils.volume_perturb import VolumePerturbAugmentor
+from modules.ecapa_tdnn import EcapaTdnn
 from utils.utility import add_arguments, print_arguments, plot_confusion_matrix
 
 parser = argparse.ArgumentParser(description=__doc__)
 add_arg = functools.partial(add_arguments, argparser=parser)
+add_arg('use_model',        str,    'ecapa_tdnn',             '所使用的模型')
 add_arg('batch_size',       int,    32,                       '训练的批量大小')
 add_arg('num_workers',      int,    4,                        '读取数据的线程数量')
 add_arg('num_epoch',        int,    30,                       '训练的轮数')
@@ -23,8 +28,9 @@ add_arg('num_classes',      int,    10,                       '分类的类别�
 add_arg('learning_rate',    float,  1e-3,                     '初始学习率的大小')
 add_arg('train_list_path',  str,    'dataset/train_list.txt', '训练数据的数据列表路径')
 add_arg('test_list_path',   str,    'dataset/test_list.txt',  '测试数据的数据列表路径')
-add_arg('label_list_path',   str,   'dataset/label_list.txt', '标签列表路径')
-add_arg('save_model',       str,    'models/',                '模型保存的路径')
+add_arg('save_model_dir',   str,    'output/models/',         '模型保存的路径')
+add_arg('feature_method',   str,    'melspectrogram',         '音频特征提取方法', choices=['melspectrogram', 'spectrogram'])
+add_arg('augment_conf_path',str,    'configs/augment.yml',    '数据增强的配置文件，为json格式')
 add_arg('resume',           str,    None,                     '恢复训练的模型文件夹，当为None则不使用恢复模型')
 args = parser.parse_args()
 
@@ -46,24 +52,40 @@ def evaluate(model, test_loader, device):
         accuracies.append(acc.item())
     model.train()
     acc = float(sum(accuracies) / len(accuracies))
-    cm = confusion_matrix(labels, preds)
-    return acc, cm
+    return acc
 
 
 def train(args):
+    # 获取数据增强器
+    augmentors = None
+    if args.augment_conf_path is not None:
+        augmentors = {}
+        with open(args.augment_conf_path, encoding="utf-8") as fp:
+            configs = yaml.load(fp, Loader=yaml.FullLoader)
+        augmentors['noise'] = NoisePerturbAugmentor(**configs['noise'])
+        augmentors['speed'] = SpeedPerturbAugmentor(**configs['speed'])
+        augmentors['volume'] = VolumePerturbAugmentor(**configs['volume'])
     # 获取数据
-    train_dataset = CustomDataset(args.train_list_path, model='train')
+    train_dataset = CustomDataset(args.train_list_path,
+                                  feature_method=args.feature_method,
+                                  mode='train',
+                                  sr=16000,
+                                  chunk_duration=3,
+                                  augmentors=augmentors)
     train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=args.num_workers)
 
-    test_dataset = CustomDataset(args.test_list_path, model='eval')
+    test_dataset = CustomDataset(args.test_list_path,
+                                 feature_method=args.feature_method,
+                                 mode='eval',
+                                 sr=16000,
+                                 chunk_duration=3)
     test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, collate_fn=collate_fn, num_workers=args.num_workers)
-    # 获取分类标签
-    with open(args.label_list_path, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-        class_labels = [l.replace('\n', '') for l in lines]
     # 获取模型
     device = torch.device("cuda")
-    model = EcapaTdnn(num_classes=args.num_classes)
+    if args.use_model == 'ecapa_tdnn':
+        model = EcapaTdnn(num_classes=args.num_classes, input_size=train_dataset.input_size)
+    else:
+        raise Exception(f'{args.use_model} 模型不存在!')
     model.to(device)
     summary(model, (80, 98))
 
@@ -114,16 +136,15 @@ def train(args):
                       f'accuracy: {sum(accuracies) / len(accuracies):.8f}')
         scheduler.step()
         # 评估模型
-        acc, cm = evaluate(model, test_loader, device)
-        plot_confusion_matrix(cm=cm, save_path=f'log/混淆矩阵_{epoch}.png', class_labels=class_labels, show=False)
+        acc = evaluate(model, test_loader, device)
         print('='*70)
-        print(f'[{datetime.now()}] Test {epoch}, accuracy: {acc}')
+        print(f'[{datetime.now()}] Test {epoch}, Accuracy: {acc}')
         print('='*70)
         # 保存模型
-        os.makedirs(args.save_model, exist_ok=True)
-        torch.save(model.state_dict(), os.path.join(args.save_model, 'model.pth'))
-        torch.save({'last_epoch': torch.tensor(epoch)}, os.path.join(args.save_model, 'model.state'))
-        torch.save(optimizer.state_dict(), os.path.join(args.save_model, 'optimizer.pth'))
+        os.makedirs(args.save_model_dir, exist_ok=True)
+        torch.save(model.state_dict(), os.path.join(args.save_model_dir, 'model.pth'))
+        torch.save({'last_epoch': torch.tensor(epoch)}, os.path.join(args.save_model_dir, 'model.state'))
+        torch.save(optimizer.state_dict(), os.path.join(args.save_model_dir, 'optimizer.pth'))
 
 
 if __name__ == '__main__':
