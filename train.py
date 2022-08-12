@@ -6,7 +6,6 @@ from datetime import datetime
 import numpy as np
 import torch
 import yaml
-from sklearn.metrics import confusion_matrix
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 from torchsummary import summary
@@ -16,7 +15,7 @@ from data_utils.reader import CustomDataset, collate_fn
 from data_utils.speed_perturb import SpeedPerturbAugmentor
 from data_utils.volume_perturb import VolumePerturbAugmentor
 from modules.ecapa_tdnn import EcapaTdnn
-from utils.utility import add_arguments, print_arguments, plot_confusion_matrix
+from utils.utility import add_arguments, print_arguments
 
 parser = argparse.ArgumentParser(description=__doc__)
 add_arg = functools.partial(add_arguments, argparser=parser)

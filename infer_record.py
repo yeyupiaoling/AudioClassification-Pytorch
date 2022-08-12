@@ -83,7 +83,8 @@ def infer(audio_path):
     result = result.data.cpu().numpy()
     # 显示图片并输出结果最大的label
     lab = np.argsort(result)[0][-1]
-    return class_labels[lab]
+    score = result[lab]
+    return class_labels[lab], score
 
 
 if __name__ == '__main__':
@@ -92,8 +93,8 @@ if __name__ == '__main__':
             # 加载数据
             audio_path = record_audio()
             # 获取预测结果
-            label = infer(audio_path)
-            print(f'预测的标签为：{label}')
+            label, s = infer(audio_path)
+            print(f'预测的标签为：{label}，得分：{s}')
     except Exception as e:
         print(e)
         stream.stop_stream()
