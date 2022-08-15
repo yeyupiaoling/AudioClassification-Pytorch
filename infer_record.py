@@ -80,9 +80,9 @@ def infer(audio_path):
     # 执行预测
     output = model(data)
     result = torch.nn.functional.softmax(output, dim=-1)
-    result = result.data.cpu().numpy()
+    result = result.data.cpu().numpy()[0]
     # 显示图片并输出结果最大的label
-    lab = np.argsort(result)[0][-1]
+    lab = np.argsort(result)[-1]
     score = result[lab]
     return class_labels[lab], score
 

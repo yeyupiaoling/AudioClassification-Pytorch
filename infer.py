@@ -42,10 +42,10 @@ def infer():
     data = torch.tensor(data, dtype=torch.float32, device=device)
     # 执行预测
     output = model(data)
-    result = torch.nn.functional.softmax(output, dim=-1)
+    result = torch.nn.functional.softmax(output, dim=-1)[0]
     result = result.data.cpu().numpy()
     # 显示图片并输出结果最大的label
-    lab = np.argsort(result)[0][-1]
+    lab = np.argsort(result)[-1]
     score = result[lab]
     print(f'音频：{args.audio_path} 的预测结果标签为：{class_labels[lab]}，得分：{score}')
 
