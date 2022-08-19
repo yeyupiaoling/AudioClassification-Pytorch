@@ -20,9 +20,6 @@ def load_audio(audio_path, feature_method='melspectrogram', mode='train', sr=160
     if mode == 'train':
         # 随机裁剪
         num_wav_samples = wav.shape[0]
-        # 数据太短不利于训练
-        if num_wav_samples < sr:
-            raise Exception(f'音频长度小于1s，实际长度为：{(num_wav_samples/sr):.2f}s')
         num_chunk_samples = int(chunk_duration * sr)
         if num_wav_samples > num_chunk_samples + 1:
             start = random.randint(0, num_wav_samples - num_chunk_samples - 1)

@@ -18,6 +18,7 @@ def get_data_list(audio_path, list_path):
         for sound in sounds:
             if '.wav' not in sound:continue
             sound_path = os.path.join(audio_path, audios[i], sound)
+            # 过滤小于1s的音频，数据太短不利于训练，如果觉得必须，可以去掉过滤
             t = librosa.get_duration(filename=sound_path)
             if t < 1:continue
             if sound_sum % 100 == 0:
@@ -31,5 +32,38 @@ def get_data_list(audio_path, list_path):
     f_train.close()
 
 
+def create_UrbanSound8K_list(audio_path, metadata_path, list_path):
+    sound_sum = 0
+
+    f_train = open(os.path.join(list_path, 'train_list.txt'), 'w')
+    f_test = open(os.path.join(list_path, 'test_list.txt'), 'w')
+    f_label = open(os.path.join(list_path, 'label_list.txt'), 'w')
+
+    with open(metadata_path) as f:
+        lines = f.readlines()
+
+    labels = set()
+    for i, line in enumerate(lines):
+        if i == 0:continue
+        data = line.replace('\n', '').split(',')
+        labels.add(data[-1])
+        sound_path = os.path.join(audio_path, f'fold{data[5]}', data[0])
+        if not os.path.exists(sound_path):
+            print(sound_path)
+        if sound_sum % 100 == 0:
+            f_test.write(f'{sound_path}\t{data[6]}\n')
+        else:
+            f_train.write(f'{sound_path}\t{data[6]}\n')
+        sound_sum += 1
+    for l in labels:
+        f_label.write(f'{l}\n')
+    f_label.close()
+    f_test.close()
+    f_train.close()
+
+
+
+
 if __name__ == '__main__':
-    get_data_list('dataset/UrbanSound8K/audio', 'dataset')
+    # get_data_list('dataset/audio', 'dataset')
+    create_UrbanSound8K_list('dataset/UrbanSound8K/audio', 'dataset/UrbanSound8K/metadata/UrbanSound8K.csv', 'dataset')
