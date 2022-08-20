@@ -42,11 +42,13 @@ def create_UrbanSound8K_list(audio_path, metadata_path, list_path):
     with open(metadata_path) as f:
         lines = f.readlines()
 
-    labels = set()
+    labels = {}
     for i, line in enumerate(lines):
         if i == 0:continue
         data = line.replace('\n', '').split(',')
-        labels.add(data[-1])
+        class_id = int(data[6])
+        if class_id not in labels.keys():
+            labels[class_id] = data[-1]
         sound_path = os.path.join(audio_path, f'fold{data[5]}', data[0])
         if not os.path.exists(sound_path):
             print(sound_path)
@@ -55,13 +57,11 @@ def create_UrbanSound8K_list(audio_path, metadata_path, list_path):
         else:
             f_train.write(f'{sound_path}\t{data[6]}\n')
         sound_sum += 1
-    for l in labels:
-        f_label.write(f'{l}\n')
+    for i in range(len(labels)):
+        f_label.write(f'{labels[i]}\n')
     f_label.close()
     f_test.close()
     f_train.close()
-
-
 
 
 if __name__ == '__main__':
