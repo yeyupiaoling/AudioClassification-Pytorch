@@ -41,10 +41,6 @@ def load_audio(audio_path,
     """
     # 读取音频数据
     wav, sr_ret = librosa.load(audio_path, sr=sr)
-    # 能量归一化
-    wav_db = 10 * np.log10(np.mean(wav ** 2) + 1e-4)
-    wav = wav * np.sqrt(10 ** ((1 - wav_db) / 10))
-    wav = wav / np.abs(wav).max() * 0.99
     # 裁剪静音
     if do_vad:
         wav = vad(wav)
@@ -91,20 +87,22 @@ def load_audio(audio_path,
                              fbank_mx=FBANK_MX,
                              USEPOWER=True,
                              ZMEANSOURCE=True)
+        features = features.T
     elif feature_method == 'melspectrogram':
         # 计算梅尔频谱
         features = librosa.feature.melspectrogram(y=wav, sr=sr, n_fft=400, n_mels=80, hop_length=160, win_length=400)
-        features = librosa.power_to_db(features, ref=1.0, amin=1e-10, top_db=None).T
+        features = librosa.power_to_db(features, ref=1.0, amin=1e-10, top_db=None)
     elif feature_method == 'spectrogram':
         # 计算声谱图
         linear = librosa.stft(wav, n_fft=400, win_length=400, hop_length=160)
         features, _ = librosa.magphase(linear)
-        features = librosa.power_to_db(features, ref=1.0, amin=1e-10, top_db=None).T
+        features = librosa.power_to_db(features, ref=1.0, amin=1e-10, top_db=None)
     else:
         raise Exception(f'预处理方法 {feature_method} 不存在！')
     # 归一化
-    features = cmvn_floating_kaldi(features, LC=150, RC=149, norm_vars=False).astype(np.float32)
-    features = features.T
+    mean = np.mean(features, 0, keepdims=True)
+    std = np.std(features, 0, keepdims=True)
+    features = (features - mean) / (std + 1e-5)
     return features
 
 
@@ -152,7 +150,7 @@ class CustomDataset(Dataset):
                                   augmentors=self.augmentors)
             return features, np.array(int(label), dtype=np.int64)
         except Exception as ex:
-            print(f"[{datetime.now()}] 数据: {self.lines[idx]} 出错，错误信息: {ex}", file=sys.stderr)
+            # print(f"[{datetime.now()}] 数据: {self.lines[idx]} 出错，错误信息: {ex}", file=sys.stderr)
             rnd_idx = np.random.randint(self.__len__())
             return self.__getitem__(rnd_idx)
 
