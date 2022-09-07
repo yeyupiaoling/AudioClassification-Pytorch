@@ -12,11 +12,11 @@ from utils.utility import add_arguments
 
 parser = argparse.ArgumentParser(description=__doc__)
 add_arg = functools.partial(add_arguments, argparser=parser)
-add_arg('use_model',        str,    'ecapa_tdnn',             '所使用的模型')
+add_arg('use_model',        str,    'ecapa_tdnn',              '所使用的模型')
 add_arg('num_classes',      int,    10,                        '分类的类别数量')
 add_arg('label_list_path',  str,    'dataset/label_list.txt',  '标签列表路径')
-add_arg('model_path',       str,    'output/models/model.pth','模型保存的路径')
-add_arg('feature_method',   str,    'melspectrogram',          '音频特征提取方法', choices=['melspectrogram', 'spectrogram'])
+add_arg('model_path',       str,    'output/models/model.pth', '模型保存的路径')
+add_arg('feature_method',   str,    'melspectrogram',          '音频特征提取方法', choices=['melspectrogram', 'spectrogram', 'fbank_htk'])
 args = parser.parse_args()
 
 
@@ -74,7 +74,7 @@ def record_audio():
 
 # 预测
 def infer(audio_path):
-    data = load_audio(audio_path, mode='infer')
+    data = load_audio(audio_path, mode='infer', feature_method=args.feature_method)
     data = data[np.newaxis, :]
     data = torch.tensor(data, dtype=torch.float32, device=device)
     # 执行预测

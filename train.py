@@ -1,7 +1,8 @@
 import argparse
 import functools
 import os
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
 
 import numpy as np
 import torch
@@ -22,14 +23,15 @@ add_arg = functools.partial(add_arguments, argparser=parser)
 add_arg('use_model',        str,    'ecapa_tdnn',             '所使用的模型')
 add_arg('batch_size',       int,    32,                       '训练的批量大小')
 add_arg('num_workers',      int,    4,                        '读取数据的线程数量')
-add_arg('audio_duration',   int,    3,                        '训练的音频长度，单位秒')
+add_arg('audio_duration',   float,  3,                        '训练的音频长度，单位秒')
+add_arg('min_duration',     float,  0.5,                      '训练的最短音频长度，单位秒')
 add_arg('num_epoch',        int,    30,                       '训练的轮数')
 add_arg('num_classes',      int,    10,                       '分类的类别数量')
 add_arg('learning_rate',    float,  1e-3,                     '初始学习率的大小')
 add_arg('train_list_path',  str,    'dataset/train_list.txt', '训练数据的数据列表路径')
 add_arg('test_list_path',   str,    'dataset/test_list.txt',  '测试数据的数据列表路径')
 add_arg('save_model_dir',   str,    'output/models/',         '模型保存的路径')
-add_arg('feature_method',   str,    'melspectrogram',         '音频特征提取方法', choices=['melspectrogram', 'spectrogram'])
+add_arg('feature_method',   str,    'melspectrogram',         '音频特征提取方法', choices=['melspectrogram', 'spectrogram', 'fbank_htk'])
 add_arg('augment_conf_path',str,    'configs/augment.yml',    '数据增强的配置文件，为json格式')
 add_arg('resume',           str,    None,                     '恢复训练的模型文件夹，当为None则不使用恢复模型')
 args = parser.parse_args()
@@ -71,6 +73,7 @@ def train(args):
                                   mode='train',
                                   sr=16000,
                                   chunk_duration=args.audio_duration,
+                                  min_duration=args.min_duration,
                                   augmentors=augmentors)
     train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=args.num_workers)
 
@@ -87,7 +90,7 @@ def train(args):
     else:
         raise Exception(f'{args.use_model} 模型不存在!')
     model.to(device)
-    summary(model, (80, 98))
+    summary(model, (train_dataset.input_size, 98))
 
     # 获取优化方法
     optimizer = torch.optim.Adam(params=model.parameters(),
@@ -97,6 +100,7 @@ def train(args):
     scheduler = CosineAnnealingLR(optimizer, T_max=args.num_epoch)
 
     # 恢复训练
+    last_epoch = 0
     if args.resume is not None:
         model.load_state_dict(torch.load(os.path.join(args.resume, 'model.pth')))
         state = torch.load(os.path.join(args.resume, 'model.state'))
@@ -108,10 +112,13 @@ def train(args):
     # 获取损失函数
     loss = torch.nn.CrossEntropyLoss()
 
+    sum_batch = len(train_loader) * (args.num_epoch - last_epoch)
     # 开始训练
     for epoch in range(args.num_epoch):
         loss_sum = []
         accuracies = []
+        train_times = []
+        start = time.time()
         for batch_id, (spec_mag, label) in enumerate(train_loader):
             spec_mag = spec_mag.to(device)
             label = label.to(device).long()
@@ -130,10 +137,15 @@ def train(args):
             acc = np.mean((output == label).astype(int))
             accuracies.append(acc)
             loss_sum.append(los)
+            train_times.append((time.time() - start) * 1000)
             if batch_id % 100 == 0:
+                eta_sec = (sum(train_times) / len(train_times)) * (sum_batch - (epoch - last_epoch) * len(train_loader) - batch_id)
+                eta_str = str(timedelta(seconds=int(eta_sec / 1000)))
                 print(f'[{datetime.now()}] Train epoch [{epoch}/{args.num_epoch}], batch: {batch_id}/{len(train_loader)}, '
                       f'lr: {scheduler.get_last_lr()[0]:.8f}, loss: {sum(loss_sum) / len(loss_sum):.8f}, '
-                      f'accuracy: {sum(accuracies) / len(accuracies):.8f}')
+                      f'accuracy: {sum(accuracies) / len(accuracies):.8f}, '
+                      f'eta: {eta_str}')
+            start = time.time()
         scheduler.step()
         # 评估模型
         acc = evaluate(model, test_loader, device)

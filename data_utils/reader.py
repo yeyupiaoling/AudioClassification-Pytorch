@@ -1,22 +1,64 @@
 import random
 import sys
 
-import warnings
 from datetime import datetime
+from data_utils.fbank_htk import add_dither, fbank_htk, povey_window, mel_fbank_mx, cmvn_floating_kaldi
+from data_utils.utils import vad
 
 import torch
-
-warnings.filterwarnings("ignore")
-
 import librosa
 import numpy as np
 from torch.utils.data import Dataset
 
 
-# 加载并预处理音频
-def load_audio(audio_path, feature_method='melspectrogram', mode='train', sr=16000, chunk_duration=3, augmentors=None):
+WINDOW = povey_window(winlen=400)
+FBANK_MX = mel_fbank_mx(winlen_nfft=400,
+                        fs=16000,
+                        NUMCHANS=64,
+                        LOFREQ=20,
+                        HIFREQ=7600)
+
+
+def load_audio(audio_path,
+               feature_method='melspectrogram',
+               mode='train',
+               sr=16000,
+               do_vad=True,
+               chunk_duration=3,
+               min_duration=0.5,
+               augmentors=None):
+    """
+    加载并预处理音频
+    :param audio_path: 音频路径
+    :param feature_method: 预处理方法
+    :param mode: 对数据处理的方式，包括train，eval，infer
+    :param sr: 采样率
+    :param do_vad: 是否裁剪静音片段
+    :param chunk_duration: 训练或者评估使用的音频长度
+    :param min_duration: 最小训练或者评估的音频长度
+    :param augmentors: 数据增强方法
+    :return:
+    """
     # 读取音频数据
     wav, sr_ret = librosa.load(audio_path, sr=sr)
+    # 能量归一化
+    wav_db = 10 * np.log10(np.mean(wav ** 2) + 1e-4)
+    wav = wav * np.sqrt(10 ** ((1 - wav_db) / 10))
+    wav = wav / np.abs(wav).max() * 0.99
+    # 裁剪静音
+    if do_vad:
+        wav = vad(wav)
+    num_wav_samples = wav.shape[0]
+    # 数据太短不利于训练
+    if mode == 'train':
+        if num_wav_samples < int(min_duration * sr):
+            raise Exception(f'音频长度小于{min_duration}s，实际长度为：{(num_wav_samples/sr):.2f}s')
+    # 对小于训练长度的复制补充
+    num_chunk_samples = int(chunk_duration * sr)
+    if num_wav_samples <= num_chunk_samples:
+        shortage = num_chunk_samples - num_wav_samples
+        wav = np.pad(wav, (0, shortage), 'wrap')
+    # 裁剪需要的数据
     if mode == 'train':
         # 随机裁剪
         num_wav_samples = wav.shape[0]
@@ -41,7 +83,16 @@ def load_audio(audio_path, feature_method='melspectrogram', mode='train', sr=160
         if num_wav_samples > num_chunk_samples + 1:
             wav = wav[:num_chunk_samples]
     # 获取音频特征
-    if feature_method == 'melspectrogram':
+    if feature_method == 'fbank_htk':
+        signal = add_dither((wav * 2 ** 15).astype(int))
+        features = fbank_htk(signal,
+                             window=WINDOW,
+                             noverlap=240,
+                             fbank_mx=FBANK_MX,
+                             USEPOWER=True,
+                             ZMEANSOURCE=True)
+        features = features.T
+    elif feature_method == 'melspectrogram':
         # 计算梅尔频谱
         features = librosa.feature.melspectrogram(y=wav, sr=sr, n_fft=400, n_mels=80, hop_length=160, win_length=400)
         features = librosa.power_to_db(features, ref=1.0, amin=1e-10, top_db=None)
@@ -53,15 +104,32 @@ def load_audio(audio_path, feature_method='melspectrogram', mode='train', sr=160
     else:
         raise Exception(f'预处理方法 {feature_method} 不存在！')
     # 归一化
-    mean = np.mean(features, 0, keepdims=True)
-    std = np.std(features, 0, keepdims=True)
-    features = (features - mean) / (std + 1e-5)
+    features = cmvn_floating_kaldi(features, LC=150, RC=149, norm_vars=False).astype(np.float32)
     return features
 
 
 # 数据加载器
 class CustomDataset(Dataset):
-    def __init__(self, data_list_path, feature_method='melspectrogram', mode='train', sr=16000, chunk_duration=3, augmentors=None):
+    """
+    加载并预处理音频
+    :param data_list_path: 数据列表
+    :param feature_method: 预处理方法
+    :param mode: 对数据处理的方式，包括train，eval，infer
+    :param sr: 采样率
+    :param do_vad: 是否裁剪静音片段
+    :param chunk_duration: 训练或者评估使用的音频长度
+    :param min_duration: 最小训练或者评估的音频长度
+    :param augmentors: 数据增强方法
+    :return:
+    """
+    def __init__(self, data_list_path,
+                 feature_method='melspectrogram',
+                 mode='train',
+                 sr=16000,
+                 do_vad=True,
+                 chunk_duration=3,
+                 min_duration=0.5,
+                 augmentors=None):
         super(CustomDataset, self).__init__()
         # 当预测时不需要获取数据
         if data_list_path is not None:
@@ -70,7 +138,9 @@ class CustomDataset(Dataset):
         self.feature_method = feature_method
         self.mode = mode
         self.sr = sr
+        self.do_vad = do_vad
         self.chunk_duration = chunk_duration
+        self.min_duration = min_duration
         self.augmentors = augmentors
 
     def __getitem__(self, idx):
@@ -78,7 +148,8 @@ class CustomDataset(Dataset):
             audio_path, label = self.lines[idx].replace('\n', '').split('\t')
             # 加载并预处理音频
             features = load_audio(audio_path, feature_method=self.feature_method, mode=self.mode, sr=self.sr,
-                                  chunk_duration=self.chunk_duration, augmentors=self.augmentors)
+                                  do_vad=self.do_vad, chunk_duration=self.chunk_duration, min_duration=self.min_duration,
+                                  augmentors=self.augmentors)
             return features, np.array(int(label), dtype=np.int64)
         except Exception as ex:
             print(f"[{datetime.now()}] 数据: {self.lines[idx]} 出错，错误信息: {ex}", file=sys.stderr)
@@ -94,6 +165,8 @@ class CustomDataset(Dataset):
             return 80
         elif self.feature_method == 'spectrogram':
             return 201
+        elif self.feature_method == 'fbank_htk':
+            return 64
         else:
             raise Exception(f'预处理方法 {self.feature_method} 不存在！')
 
