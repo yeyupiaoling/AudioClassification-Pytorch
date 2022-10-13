@@ -31,6 +31,7 @@ def evaluate():
                                  feature_method=args.feature_method,
                                  mode='eval',
                                  sr=16000,
+                                 do_vad=False,
                                  chunk_duration=args.audio_duration)
     eval_loader = DataLoader(dataset=eval_dataset, batch_size=args.batch_size, collate_fn=collate_fn, num_workers=args.num_workers)
     # 获取分类标签

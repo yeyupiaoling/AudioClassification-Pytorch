@@ -1,10 +1,11 @@
 import os
 
 import librosa
+import soundfile
 
 
 # 生成数据列表
-def get_data_list(audio_path, list_path):
+def get_data_list(audio_path, list_path, min_duration=0.5):
     sound_sum = 0
     audios = os.listdir(audio_path)
 
@@ -20,7 +21,7 @@ def get_data_list(audio_path, list_path):
             sound_path = os.path.join(audio_path, audios[i], sound)
             # 过滤小于1s的音频，数据太短不利于训练，如果觉得必须，可以去掉过滤
             t = librosa.get_duration(filename=sound_path)
-            if t < 1:continue
+            if t <= min_duration:continue
             if sound_sum % 100 == 0:
                 f_test.write('%s\t%d\n' % (sound_path, i))
             else:
@@ -32,7 +33,7 @@ def get_data_list(audio_path, list_path):
     f_train.close()
 
 
-def create_UrbanSound8K_list(audio_path, metadata_path, list_path):
+def create_UrbanSound8K_list(audio_path, metadata_path, list_path, min_duration=0.5):
     sound_sum = 0
 
     f_train = open(os.path.join(list_path, 'train_list.txt'), 'w', encoding='utf-8')
@@ -50,8 +51,8 @@ def create_UrbanSound8K_list(audio_path, metadata_path, list_path):
         if class_id not in labels.keys():
             labels[class_id] = data[-1]
         sound_path = os.path.join(audio_path, f'fold{data[5]}', data[0])
-        if not os.path.exists(sound_path):
-            print(sound_path)
+        t = librosa.get_duration(filename=sound_path)
+        if t <= min_duration: continue
         if sound_sum % 100 == 0:
             f_test.write(f'{sound_path}\t{data[6]}\n')
         else:

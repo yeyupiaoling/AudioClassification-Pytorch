@@ -36,6 +36,11 @@ def load_audio(audio_path,
     # 读取音频数据
     try:
         wav, samplerate = soundfile.read(audio_path, dtype='float32')
+        # 多通道转单通道
+        if wav.ndim > 1:
+            wav = wav.T
+            wav = np.mean(wav, axis=tuple(range(wav.ndim - 1)))
+        # 重采样
         if samplerate != sr:
             wav = resampy.resample(wav, sr_orig=samplerate, sr_new=sr)
     except:
@@ -44,6 +49,7 @@ def load_audio(audio_path,
                   .output("-", format="s16le", acodec="pcm_s16le", ac=1, ar=sr)
                   .run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True))
         wav = np.frombuffer(out, np.int16).flatten().astype(np.float32) / 32768.0
+    assert len(wav.shape) == 1, f'{audio_path}'
     # 裁剪静音
     if do_vad:
         wav = vad(wav)

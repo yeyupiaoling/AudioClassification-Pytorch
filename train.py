@@ -24,7 +24,7 @@ add_arg('use_model',        str,    'ecapa_tdnn',             '所使用的模�
 add_arg('batch_size',       int,    32,                       '训练的批量大小')
 add_arg('num_workers',      int,    4,                        '读取数据的线程数量')
 add_arg('audio_duration',   float,  3,                        '训练的音频长度，单位秒')
-add_arg('min_duration',     float,  0.1,                      '训练的最短音频长度，单位秒')
+add_arg('min_duration',     float,  0.5,                      '训练的最短音频长度，单位秒')
 add_arg('num_epoch',        int,    30,                       '训练的轮数')
 add_arg('num_classes',      int,    10,                       '分类的类别数量')
 add_arg('learning_rate',    float,  1e-3,                     '初始学习率的大小')
@@ -74,6 +74,7 @@ def train(args):
                                   sr=16000,
                                   chunk_duration=args.audio_duration,
                                   min_duration=args.min_duration,
+                                  do_vad=False,
                                   augmentors=augmentors)
     train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn, num_workers=args.num_workers)
 
@@ -81,6 +82,7 @@ def train(args):
                                  feature_method=args.feature_method,
                                  mode='eval',
                                  sr=16000,
+                                 do_vad=False,
                                  chunk_duration=args.audio_duration)
     test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, collate_fn=collate_fn, num_workers=args.num_workers)
     # 获取模型
