@@ -116,4 +116,5 @@ class EcapaTdnn(nn.Module):
         out = F.relu(self.conv(out))
         out = self.bn1(self.pooling(out))
         out = self.bn2(self.linear(out))
+        out = self.fc(out)
         return out
