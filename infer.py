@@ -1,54 +1,30 @@
 import argparse
 import functools
 
-import numpy as np
-import torch
+import yaml
 
-from data_utils.reader import CustomDataset
-from data_utils.reader import load_audio
-from modules.ecapa_tdnn import EcapaTdnn
-from utils.utility import add_arguments
+from macls.predict import PPAClsPredictor
+from macls.utils.utils import add_arguments, print_arguments
 
 parser = argparse.ArgumentParser(description=__doc__)
 add_arg = functools.partial(add_arguments, argparser=parser)
-add_arg('use_model',        str,    'ecapa_tdnn',             '所使用的模型')
+add_arg('configs',          str,    'configs/ecapa_tdnn.yml',   '配置文件')
+add_arg('use_gpu',          bool,   True,                       '是否使用GPU预测')
 add_arg('audio_path',       str,    'dataset/UrbanSound8K/audio/fold5/156634-5-2-5.wav', '音频路径')
-add_arg('num_classes',      int,    10,                        '分类的类别数量')
-add_arg('label_list_path',  str,    'dataset/label_list.txt',  '标签列表路径')
-add_arg('feature_method',   str,    'melspectrogram',          '音频特征提取方法', choices=['melspectrogram', 'spectrogram'])
-add_arg('model_path',       str,    'output/models/model.pth', '模型保存的路径')
+add_arg('model_path',       str,    'models/{}_{}/best_model/', '导出的预测模型文件路径')
 args = parser.parse_args()
 
+# 读取配置文件
+with open(args.configs, 'r', encoding='utf-8') as f:
+    configs = yaml.load(f.read(), Loader=yaml.FullLoader)
+print_arguments(args, configs)
 
-train_dataset = CustomDataset(data_list_path=None, feature_method=args.feature_method)
-# 获取分类标签
-with open(args.label_list_path, 'r', encoding='utf-8') as f:
-    lines = f.readlines()
-class_labels = [l.replace('\n', '') for l in lines]
-# 获取模型
-device = torch.device("cuda")
-if args.use_model == 'ecapa_tdnn':
-    model = EcapaTdnn(num_classes=args.num_classes, input_size=train_dataset.input_size)
-else:
-    raise Exception(f'{args.use_model} 模型不存在!')
-model.to(device)
-model.load_state_dict(torch.load(args.model_path))
-model.eval()
+# 获取识别器
+predictor = PPAClsPredictor(configs=configs,
+                            model_path=args.model_path.format(configs['use_model'],
+                                                              configs['preprocess_conf']['feature_method']),
+                            use_gpu=args.use_gpu)
 
+label, score = predictor.predict(audio_data=args.audio_path)
 
-def infer():
-    data = load_audio(args.audio_path, mode='infer', feature_method=args.feature_method)
-    data = data[np.newaxis, :]
-    data = torch.tensor(data, dtype=torch.float32, device=device)
-    # 执行预测
-    output = model(data)
-    result = torch.nn.functional.softmax(output, dim=-1)[0]
-    result = result.data.cpu().numpy()
-    # 显示图片并输出结果最大的label
-    lab = np.argsort(result)[-1]
-    score = result[lab]
-    print(f'音频：{args.audio_path} 的预测结果标签为：{class_labels[lab]}，得分：{score}')
-
-
-if __name__ == '__main__':
-    infer()
+print(f'音频：{args.audio_path} 的预测结果标签为：{label}，得分：{score}')
