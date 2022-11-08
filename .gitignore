@@ -6,4 +6,5 @@ macls.egg-info/
 dataset/
 log/
 output/
+models/
 infer_audio.wav

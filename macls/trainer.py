@@ -238,8 +238,8 @@ class PPAClsTrainer(object):
             # 固定步数也要保存一次模型
             if batch_id % 10000 == 0 and batch_id != 0 and local_rank == 0:
                 self.__save_checkpoint(save_model_path=save_model_path, epoch_id=epoch_id)
-            self.scheduler.step()
             start = time.time()
+        self.scheduler.step()
 
     def train(self,
               save_model_path='models/',

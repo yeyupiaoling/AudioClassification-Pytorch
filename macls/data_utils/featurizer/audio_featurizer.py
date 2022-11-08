@@ -1,6 +1,7 @@
 import numpy as np
 import paddle
-from paddleaudio.compliance.kaldi import fbank, spectrogram
+import torch
+from torchaudio.compliance.kaldi import fbank, spectrogram
 
 from macls.data_utils.utils import cmvn_floating_kaldi
 
@@ -47,20 +48,21 @@ class AudioFeaturizer(object):
         if self._use_dB_normalization:
             audio_segment.normalize(target_db=self._target_dB)
         # 获取音频特征
-        waveform = paddle.to_tensor(np.expand_dims(audio_segment.samples, 0), dtype=paddle.float32)
+        samples = audio_segment.to('int16')
+        waveform = torch.from_numpy(np.expand_dims(samples, 0)).float()
         if self._feature_method == 'spectrogram':
             # 计算声谱图
             feature = spectrogram(waveform=waveform,
                                   frame_length=self._frame_length,
                                   frame_shift=self._frame_shift,
-                                  sr=audio_segment.sample_rate).numpy()
+                                  sample_frequency=audio_segment.sample_rate).numpy()
         elif self._feature_method == 'melspectrogram':
             # 计算梅尔频谱
             feature = fbank(waveform=waveform,
-                            n_mels=self._n_mels,
+                            num_mel_bins=self._n_mels,
                             frame_length=self._frame_length,
                             frame_shift=self._frame_shift,
-                            sr=audio_segment.sample_rate).numpy()
+                            sample_frequency=audio_segment.sample_rate).numpy()
         else:
             raise Exception(f'预处理方法 {self._feature_method} 不存在！')
         # 归一化
