@@ -61,27 +61,6 @@ def concatenate(wave, overlap=200):
     return unfolded[:end]
 
 
-def cmvn_floating_kaldi(x, LC, RC, norm_vars=True):
-    """Mean and variance normalization over a floating window.
-    x is the feature matrix (nframes x dim)
-    LC, RC are the number of frames to the left and right defining the floating
-    window around the current frame. This function uses Kaldi-like treatment of
-    the initial and final frames: Floating windows stay of the same size and
-    for the initial and final frames are not centered around the current frame
-    but shifted to fit in at the beginning or the end of the feature segment.
-    Global normalization is used if nframes is less than LC+RC+1.
-    """
-    N, dim = x.shape
-    win_len = min(len(x), LC + RC + 1)
-    win_start = np.maximum(np.minimum(np.arange(-LC, N - LC), N - win_len), 0)
-    f = np.r_[np.zeros((1, dim)), np.cumsum(x, 0)]
-    x = x - (f[win_start + win_len] - f[win_start]) / win_len
-    if norm_vars:
-        f = np.r_[np.zeros((1, dim)), np.cumsum(x ** 2, 0)]
-        x /= np.sqrt((f[win_start + win_len] - f[win_start]) / win_len)
-    return x
-
-
 # 将音频流转换为numpy
 def buf_to_float(x, n_bytes=2, dtype=np.float32):
     """Convert an integer buffer to floating point values.

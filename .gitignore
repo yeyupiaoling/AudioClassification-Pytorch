@@ -7,4 +7,4 @@ dataset/
 log/
 output/
 models/
-infer_audio.wav
+test.py

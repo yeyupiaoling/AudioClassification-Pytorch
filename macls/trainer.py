@@ -100,7 +100,7 @@ class PPAClsTrainer(object):
         else:
             raise Exception(f'{self.configs.use_model} 模型不存在！')
         self.model.to(self.device)
-        summary(self.model, (self.test_dataset.feature_dim, 98))
+        summary(self.model, (98, self.test_dataset.feature_dim))
         # print(self.model)
         # 获取损失函数
         self.loss = torch.nn.CrossEntropyLoss()

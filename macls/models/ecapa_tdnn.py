@@ -107,6 +107,16 @@ class EcapaTdnn(nn.Module):
         self.fc = nn.Linear(embd_dim, num_classes)
 
     def forward(self, x):
+        """
+        Compute embeddings.
+
+        Args:
+            x (torch.Tensor): Input data with shape (N, time, freq).
+
+        Returns:
+            torch.Tensor: Output embeddings with shape (N, self.emb_size, 1)
+        """
+        x = x.transpose(2, 1)
         out1 = self.layer1(x)
         out2 = self.layer2(out1) + out1
         out3 = self.layer3(out1 + out2) + out1 + out2
