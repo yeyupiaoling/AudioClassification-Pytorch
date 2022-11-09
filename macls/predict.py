@@ -33,9 +33,6 @@ class PPAClsPredictor:
         self.configs = dict_to_object(configs)
         assert self.configs.use_model in SUPPORT_MODEL, f'没有该模型：{self.configs.use_model}'
         self._audio_featurizer = AudioFeaturizer(**self.configs.preprocess_conf)
-        # 创建模型
-        if not os.path.exists(model_path):
-            raise Exception("模型文件不存在，请检查{}是否存在！".format(model_path))
         # 获取模型
         if self.configs.use_model == 'ecapa_tdnn':
             self.predictor = EcapaTdnn(input_size=self._audio_featurizer.feature_dim,
@@ -97,16 +94,16 @@ class PPAClsPredictor:
         :return: 结果标签和对应的得分
         """
         # 找出音频长度最长的
-        batch = sorted(audios_data, key=lambda a: a.shape[1], reverse=True)
-        freq_size = batch[0].shape[0]
-        max_audio_length = batch[0].shape[1]
+        batch = sorted(audios_data, key=lambda a: a.shape[0], reverse=True)
+        freq_size = batch[0].shape[1]
+        max_audio_length = batch[0].shape[0]
         batch_size = len(batch)
         # 以最大的长度创建0张量
-        inputs = np.zeros((batch_size, freq_size, max_audio_length), dtype=np.float32)
+        inputs = np.zeros((batch_size, max_audio_length, freq_size), dtype=np.float32)
         for i, sample in enumerate(batch):
-            seq_length = sample.shape[1]
+            seq_length = sample.shape[0]
             # 将数据插入都0张量中，实现了padding
-            inputs[i, :, :seq_length] = sample[:, :]
+            inputs[i, :seq_length, :] = sample[:, :]
         audios_data = torch.tensor(inputs, dtype=torch.float32, device=self.device).unsqueeze(0)
         # 执行预测
         output = self.predictor(audios_data)

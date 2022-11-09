@@ -63,8 +63,8 @@ class AudioFeaturizer(object):
         else:
             raise Exception(f'预处理方法 {self._feature_method} 不存在！')
         # 归一化
-        mean = np.mean(feature, 0, keepdims=True)
-        std = np.std(feature, 0, keepdims=True)
+        mean = np.mean(feature, 1, keepdims=True)
+        std = np.std(feature, 1, keepdims=True)
         feature = (feature - mean) / (std + 1e-5)
         return feature
 

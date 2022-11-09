@@ -85,7 +85,7 @@ class PPAClsTrainer(object):
                                           do_vad=self.configs.dataset_conf.chunk_duration,
                                           chunk_duration=self.configs.dataset_conf.chunk_duration,
                                           min_duration=self.configs.dataset_conf.min_duration,
-                                          mode='train')
+                                          mode='eval')
         self.test_loader = DataLoader(dataset=self.test_dataset,
                                       batch_size=self.configs.dataset_conf.batch_size,
                                       collate_fn=collate_fn,
@@ -138,7 +138,7 @@ class PPAClsTrainer(object):
 
     def __load_checkpoint(self, save_model_path, resume_model):
         last_epoch = -1
-        best_loss = 1e4
+        best_acc = 0
         last_model_dir = os.path.join(save_model_path,
                                       f'{self.configs.use_model}_{self.configs.preprocess_conf.feature_method}',
                                       'last_model')
@@ -157,12 +157,12 @@ class PPAClsTrainer(object):
             with open(os.path.join(resume_model, 'model.state'), 'r', encoding='utf-8') as f:
                 json_data = json.load(f)
                 last_epoch = json_data['last_epoch'] - 1
-                best_loss = json_data['best_loss']
+                best_acc = json_data['accuracy']
             logger.info('成功恢复模型参数和优化方法参数：{}'.format(resume_model))
-        return last_epoch, best_loss
+        return last_epoch, best_acc
 
     # 保存模型
-    def __save_checkpoint(self, save_model_path, epoch_id, best_loss=1e4, best_model=False):
+    def __save_checkpoint(self, save_model_path, epoch_id, best_acc=0., best_model=False):
         if isinstance(self.model, torch.nn.parallel.DistributedDataParallel):
             state_dict = self.model.module.state_dict()
         else:
@@ -179,7 +179,7 @@ class PPAClsTrainer(object):
         torch.save(self.optimizer.state_dict(), os.path.join(model_path, 'optimizer.pt'))
         torch.save(state_dict, os.path.join(model_path, 'model.pt'))
         with open(os.path.join(model_path, 'model.state'), 'w', encoding='utf-8') as f:
-            f.write('{"last_epoch": %d, "best_loss": %f}' % (epoch_id, best_loss))
+            f.write('{"last_epoch": %d, "accuracy": %f}' % (epoch_id, best_acc))
         if not best_model:
             last_model_path = os.path.join(save_model_path,
                                            f'{self.configs.use_model}_{self.configs.preprocess_conf.feature_method}',
@@ -235,9 +235,6 @@ class PPAClsTrainer(object):
                 writer.add_scalar('Train/Loss', sum(loss_sum) / len(loss_sum), self.train_step)
                 writer.add_scalar('Train/Accuracy', (sum(accuracies) / len(accuracies)), self.train_step)
                 train_times = []
-            # 固定步数也要保存一次模型
-            if batch_id % 10000 == 0 and batch_id != 0 and local_rank == 0:
-                self.__save_checkpoint(save_model_path=save_model_path, epoch_id=epoch_id)
             start = time.time()
         self.scheduler.step()
 
@@ -278,7 +275,7 @@ class PPAClsTrainer(object):
 
         self.__load_pretrained(pretrained_model=pretrained_model)
         # 加载恢复模型
-        last_epoch, best_loss = self.__load_checkpoint(save_model_path=save_model_path, resume_model=resume_model)
+        last_epoch, best_acc = self.__load_checkpoint(save_model_path=save_model_path, resume_model=resume_model)
 
         test_step, self.train_step = 0, 0
         last_epoch += 1
@@ -305,12 +302,12 @@ class PPAClsTrainer(object):
                 # 记录学习率
                 writer.add_scalar('Train/lr', self.scheduler.get_last_lr()[0], epoch_id)
                 # # 保存最优模型
-                if loss <= best_loss:
-                    best_loss = loss
-                    self.__save_checkpoint(save_model_path=save_model_path, epoch_id=epoch_id, best_loss=loss,
+                if acc >= best_acc:
+                    best_acc = acc
+                    self.__save_checkpoint(save_model_path=save_model_path, epoch_id=epoch_id, best_acc=acc,
                                            best_model=True)
                 # 保存模型
-                self.__save_checkpoint(save_model_path=save_model_path, epoch_id=epoch_id, best_loss=loss)
+                self.__save_checkpoint(save_model_path=save_model_path, epoch_id=epoch_id, best_acc=acc)
 
     def evaluate(self, resume_model='models/ecapa_tdnn_spectrogram/best_model/', save_matrix_path=None):
         """

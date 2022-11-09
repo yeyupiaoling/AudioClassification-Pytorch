@@ -19,9 +19,9 @@
 
 ## 安装环境
 
- - 首先安装的是PaddlePaddle的GPU版本，如果已经安装过了，请跳过。
+ - 首先安装的是Pytorch的GPU版本，如果已经安装过了，请跳过。
 ```shell
-conda install pytorch torchvision torchaudio pytorch-cuda=11.6 -c pytorch -c nvidia
+conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=10.2 -c pytorch
 ```
 
  - 安装macls库。
@@ -68,7 +68,7 @@ CUDA_VISIBLE_DEVICES=0 python train.py
 CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node=2 train.py
 ```
 
-每轮训练结束之后都会执行一次评估，和保存模型。评估会出来输出准确率，还保存了混合矩阵图片，如下。
+每轮训练结束之后都会执行一次评估，和保存模型。评估会出来输出准确率，还保存了混合矩阵图片，保存路径`output/images/`，如下。
 ![混合矩阵](./images/image1.png)
 
 # 预测
