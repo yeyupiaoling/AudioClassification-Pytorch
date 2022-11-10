@@ -10,6 +10,7 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from sklearn.metrics import confusion_matrix
+from torch.utils.data.distributed import DistributedSampler
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 from torchsummary import summary
@@ -69,15 +70,15 @@ class PPAClsTrainer(object):
                                                min_duration=self.configs.dataset_conf.min_duration,
                                                augmentation_config=augmentation_config,
                                                mode='train')
-            train_batch_sampler = None
+            train_sampler = None
             if torch.cuda.device_count() > 1:
                 # 设置支持多卡训练
-                train_batch_sampler = torch.utils.data.DistributedSampler(dataset=self.train_dataset,
-                                                                          shuffle=True)
+                train_sampler = DistributedSampler(dataset=self.train_dataset)
             self.train_loader = DataLoader(dataset=self.train_dataset,
                                            collate_fn=collate_fn,
+                                           shuffle=(train_sampler is None),
                                            batch_size=self.configs.dataset_conf.batch_size,
-                                           batch_sampler=train_batch_sampler,
+                                           sampler=train_sampler,
                                            num_workers=self.configs.dataset_conf.num_workers)
         # 获取测试数据
         self.test_dataset = CustomDataset(preprocess_configs=self.configs.preprocess_conf,
@@ -269,6 +270,8 @@ class PPAClsTrainer(object):
 
         # 支持多卡训练
         if nranks > 1 and self.use_gpu:
+            torch.cuda.set_device(local_rank)
+            self.model.cuda(local_rank)
             self.model = torch.nn.parallel.DistributedDataParallel(self.model, device_ids=[local_rank])
         logger.info('训练数据：{}'.format(len(self.train_dataset)))
 
