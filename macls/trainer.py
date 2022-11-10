@@ -194,13 +194,17 @@ class PPAClsTrainer(object):
                 shutil.rmtree(old_model_path)
         logger.info('已保存模型：{}'.format(model_path))
 
-    def __train_epoch(self, epoch_id, local_rank, writer):
+    def __train_epoch(self, epoch_id, local_rank, writer, nranks=0):
         train_times, accuracies, loss_sum = [], [], []
         start = time.time()
         sum_batch = len(self.train_loader) * self.configs.train_conf.max_epoch
         for batch_id, (audio, label) in enumerate(self.train_loader):
-            audio = audio.to(self.device)
-            label = label.to(self.device).long()
+            if nranks > 1:
+                audio = audio.to(local_rank)
+                label = label.to(local_rank).long()
+            else:
+                audio = audio.to(self.device)
+                label = label.to(self.device).long()
             output = self.model(audio)
             # 计算损失值
             los = self.loss(output, label)
@@ -261,7 +265,7 @@ class PPAClsTrainer(object):
         if nranks > 1 and self.use_gpu:
             # 初始化NCCL环境
             dist.init_process_group(backend='nccl')
-            local_rank = dist.get_rank()
+            local_rank = int(os.environ["LOCAL_RANK"])
 
         # 获取数据
         self.__setup_dataloader(augment_conf_path=augment_conf_path, is_train=True)
@@ -270,8 +274,7 @@ class PPAClsTrainer(object):
 
         # 支持多卡训练
         if nranks > 1 and self.use_gpu:
-            torch.cuda.set_device(local_rank)
-            self.model.cuda(local_rank)
+            self.model.to(local_rank)
             self.model = torch.nn.parallel.DistributedDataParallel(self.model, device_ids=[local_rank])
         logger.info('训练数据：{}'.format(len(self.train_dataset)))
 
@@ -288,7 +291,7 @@ class PPAClsTrainer(object):
             epoch_id += 1
             start_epoch = time.time()
             # 训练一个epoch
-            self.__train_epoch(epoch_id=epoch_id, local_rank=local_rank, writer=writer)
+            self.__train_epoch(epoch_id=epoch_id, local_rank=local_rank, writer=writer, nranks=nranks)
             # 多卡训练只使用一个进程执行评估和保存模型
             if local_rank == 0:
                 logger.info('=' * 70)
