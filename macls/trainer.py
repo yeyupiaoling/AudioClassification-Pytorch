@@ -105,11 +105,10 @@ class PPAClsTrainer(object):
         # 获取损失函数
         self.loss = torch.nn.CrossEntropyLoss()
         if is_train:
-            # 优化方法
-            self.optimizer = torch.optim.SGD(params=self.model.parameters(),
-                                             lr=float(self.configs.optimizer_conf.learning_rate),
-                                             momentum=0.9,
-                                             weight_decay=float(self.configs.optimizer_conf.weight_decay))
+            # 获取优化方法
+            self.optimizer = torch.optim.Adam(params=self.model.parameters(),
+                                              lr=float(self.configs.optimizer_conf.learning_rate),
+                                              weight_decay=float(self.configs.optimizer_conf.weight_decay))
             # 学习率衰减函数
             self.scheduler = CosineAnnealingLR(self.optimizer, T_max=int(self.configs.train_conf.max_epoch * 1.2))
 
@@ -194,7 +193,7 @@ class PPAClsTrainer(object):
                 shutil.rmtree(old_model_path)
         logger.info('已保存模型：{}'.format(model_path))
 
-    def __train_epoch(self, epoch_id, save_model_path, local_rank, writer):
+    def __train_epoch(self, epoch_id, local_rank, writer):
         train_times, accuracies, loss_sum = [], [], []
         start = time.time()
         sum_batch = len(self.train_loader) * self.configs.train_conf.max_epoch
@@ -286,8 +285,7 @@ class PPAClsTrainer(object):
             epoch_id += 1
             start_epoch = time.time()
             # 训练一个epoch
-            self.__train_epoch(epoch_id=epoch_id, save_model_path=save_model_path, local_rank=local_rank,
-                               writer=writer)
+            self.__train_epoch(epoch_id=epoch_id, local_rank=local_rank, writer=writer)
             # 多卡训练只使用一个进程执行评估和保存模型
             if local_rank == 0:
                 logger.info('=' * 70)
