@@ -65,7 +65,7 @@ dataset/UrbanSound8K/audio/fold4/109711-3-2-4.wav	3
 # 单卡训练
 CUDA_VISIBLE_DEVICES=0 python train.py
 # 多卡训练
-CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node=2 train.py
+CUDA_VISIBLE_DEVICES=0,1 torchrun --standalone --nnodes=1 --nproc_per_node=2 train.py
 ```
 
 每轮训练结束之后都会执行一次评估，和保存模型。评估会出来输出准确率，还保存了混合矩阵图片，保存路径`output/images/`，如下。
