@@ -6,5 +6,4 @@ macls.egg-info/
 dataset/
 log/
 output/
-models/
 test.py

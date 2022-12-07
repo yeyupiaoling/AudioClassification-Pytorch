@@ -12,6 +12,7 @@ logger = setup_logger(__name__)
 # 音频数据加载器
 class CustomDataset(Dataset):
     def __init__(self,
+                 feature_conf,
                  preprocess_configs,
                  data_list_path,
                  do_vad=True,
@@ -25,7 +26,7 @@ class CustomDataset(Dataset):
         self.min_duration = min_duration
         self.mode = mode
         self._augmentation_pipeline = AugmentationPipeline(augmentation_config=augmentation_config)
-        self._audio_featurizer = AudioFeaturizer(**preprocess_configs)
+        self._audio_featurizer = AudioFeaturizer(feature_conf=feature_conf, **preprocess_configs)
         # 获取数据列表
         with open(data_list_path, 'r') as f:
             self.lines = f.readlines()

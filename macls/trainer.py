@@ -22,6 +22,7 @@ from macls.data_utils.collate_fn import collate_fn
 from macls.data_utils.featurizer.audio_featurizer import AudioFeaturizer
 from macls.data_utils.reader import CustomDataset
 from macls.models.ecapa_tdnn import EcapaTdnn
+from macls.models.panns import CNN6, CNN10, CNN14
 from macls.utils.logger import setup_logger
 from macls.utils.utils import dict_to_object, plot_confusion_matrix
 
@@ -63,7 +64,8 @@ class PPAClsTrainer(object):
                 logger.info('数据增强配置文件{}不存在'.format(augment_conf_path))
             augmentation_config = '{}'
         if is_train:
-            self.train_dataset = CustomDataset(preprocess_configs=self.configs.preprocess_conf,
+            self.train_dataset = CustomDataset(feature_conf=self.configs.feature_conf,
+                                               preprocess_configs=self.configs.preprocess_conf,
                                                data_list_path=self.configs.dataset_conf.train_list,
                                                do_vad=self.configs.dataset_conf.chunk_duration,
                                                chunk_duration=self.configs.dataset_conf.chunk_duration,
@@ -81,7 +83,8 @@ class PPAClsTrainer(object):
                                            sampler=train_sampler,
                                            num_workers=self.configs.dataset_conf.num_workers)
         # 获取测试数据
-        self.test_dataset = CustomDataset(preprocess_configs=self.configs.preprocess_conf,
+        self.test_dataset = CustomDataset(feature_conf=self.configs.feature_conf,
+                                          preprocess_configs=self.configs.preprocess_conf,
                                           data_list_path=self.configs.dataset_conf.test_list,
                                           do_vad=self.configs.dataset_conf.chunk_duration,
                                           chunk_duration=self.configs.dataset_conf.chunk_duration,
@@ -98,6 +101,18 @@ class PPAClsTrainer(object):
             self.model = EcapaTdnn(input_size=input_size,
                                    num_classes=self.configs.dataset_conf.num_class,
                                    **self.configs.model_conf)
+        elif self.configs.use_model == 'panns_cnn6':
+            self.model = CNN6(input_size=input_size,
+                              num_class=self.configs.dataset_conf.num_class,
+                              **self.configs.model_conf)
+        elif self.configs.use_model == 'panns_cnn10':
+            self.model = CNN10(input_size=input_size,
+                               num_class=self.configs.dataset_conf.num_class,
+                               **self.configs.model_conf)
+        elif self.configs.use_model == 'panns_cnn14':
+            self.model = CNN14(input_size=input_size,
+                               num_class=self.configs.dataset_conf.num_class,
+                               **self.configs.model_conf)
         else:
             raise Exception(f'{self.configs.use_model} 模型不存在！')
         self.model.to(self.device)
@@ -378,7 +393,7 @@ class PPAClsTrainer(object):
         :return:
         """
         # 获取模型
-        audio_featurizer = AudioFeaturizer(**self.configs.preprocess_conf)
+        audio_featurizer = AudioFeaturizer(feature_conf=self.configs.feature_conf, **self.configs.preprocess_conf)
         self.__setup_model(input_size=audio_featurizer.feature_dim)
         # 加载预训练模型
         if os.path.isdir(resume_model):
