@@ -40,17 +40,17 @@ class PPAClsPredictor:
                                        num_classes=self.configs.dataset_conf.num_class,
                                        **self.configs.model_conf)
         elif self.configs.use_model == 'panns_cnn6':
-            self.model = CNN6(input_size=self._audio_featurizer.feature_dim,
-                              num_class=self.configs.dataset_conf.num_class,
-                              **self.configs.model_conf)
+            self.predictor = CNN6(input_size=self._audio_featurizer.feature_dim,
+                                  num_class=self.configs.dataset_conf.num_class,
+                                  **self.configs.model_conf)
         elif self.configs.use_model == 'panns_cnn10':
-            self.model = CNN10(input_size=self._audio_featurizer.feature_dim,
-                               num_class=self.configs.dataset_conf.num_class,
-                               **self.configs.model_conf)
+            self.predictor = CNN10(input_size=self._audio_featurizer.feature_dim,
+                                   num_class=self.configs.dataset_conf.num_class,
+                                   **self.configs.model_conf)
         elif self.configs.use_model == 'panns_cnn14':
-            self.model = CNN14(input_size=self._audio_featurizer.feature_dim,
-                               num_class=self.configs.dataset_conf.num_class,
-                               **self.configs.model_conf)
+            self.predictor = CNN14(input_size=self._audio_featurizer.feature_dim,
+                                   num_class=self.configs.dataset_conf.num_class,
+                                   **self.configs.model_conf)
         else:
             raise Exception(f'{self.configs.use_model} 模型不存在！')
         self.predictor.to(self.device)
