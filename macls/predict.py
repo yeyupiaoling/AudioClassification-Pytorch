@@ -5,7 +5,7 @@ import torch
 
 from macls import SUPPORT_MODEL
 from macls.data_utils.audio import AudioSegment
-from macls.data_utils.featurizer.audio_featurizer import AudioFeaturizer
+from macls.data_utils.featurizer import AudioFeaturizer
 from macls.models.ecapa_tdnn import EcapaTdnn
 from macls.models.panns import CNN6, CNN10, CNN14
 from macls.utils.logger import setup_logger
@@ -33,22 +33,24 @@ class PPAClsPredictor:
             self.device = torch.device("cpu")
         self.configs = dict_to_object(configs)
         assert self.configs.use_model in SUPPORT_MODEL, f'没有该模型：{self.configs.use_model}'
-        self._audio_featurizer = AudioFeaturizer(feature_conf=self.configs.feature_conf, **self.configs.preprocess_conf)
+        # 获取特征器
+        self.audio_featurizer = AudioFeaturizer(feature_conf=self.configs.feature_conf, **self.configs.preprocess_conf)
+        self.audio_featurizer.to(self.device)
         # 获取模型
         if self.configs.use_model == 'ecapa_tdnn':
-            self.predictor = EcapaTdnn(input_size=self._audio_featurizer.feature_dim,
+            self.predictor = EcapaTdnn(input_size=self.audio_featurizer.feature_dim,
                                        num_classes=self.configs.dataset_conf.num_class,
                                        **self.configs.model_conf)
         elif self.configs.use_model == 'panns_cnn6':
-            self.predictor = CNN6(input_size=self._audio_featurizer.feature_dim,
+            self.predictor = CNN6(input_size=self.audio_featurizer.feature_dim,
                                   num_class=self.configs.dataset_conf.num_class,
                                   **self.configs.model_conf)
         elif self.configs.use_model == 'panns_cnn10':
-            self.predictor = CNN10(input_size=self._audio_featurizer.feature_dim,
+            self.predictor = CNN10(input_size=self.audio_featurizer.feature_dim,
                                    num_class=self.configs.dataset_conf.num_class,
                                    **self.configs.model_conf)
         elif self.configs.use_model == 'panns_cnn14':
-            self.predictor = CNN14(input_size=self._audio_featurizer.feature_dim,
+            self.predictor = CNN14(input_size=self.audio_featurizer.feature_dim,
                                    num_class=self.configs.dataset_conf.num_class,
                                    **self.configs.model_conf)
         else:
@@ -89,10 +91,10 @@ class PPAClsPredictor:
             input_data = AudioSegment.from_wave_bytes(audio_data)
         else:
             raise Exception(f'不支持该数据类型，当前数据类型为：{type(audio_data)}')
-        audio_feature = self._audio_featurizer.featurize(input_data)
-        input_data = torch.tensor(audio_feature, dtype=torch.float32, device=self.device).unsqueeze(0)
+        input_data = torch.tensor(input_data.samples, dtype=torch.float32, device=self.device).unsqueeze(0)
+        audio_feature = self.audio_featurizer(input_data)
         # 执行预测
-        output = self.predictor(input_data)
+        output = self.predictor(audio_feature)
         result = torch.nn.functional.softmax(output, dim=-1)[0]
         result = result.data.cpu().numpy()
         # 最大概率的label

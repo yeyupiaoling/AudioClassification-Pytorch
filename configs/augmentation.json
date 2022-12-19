@@ -58,7 +58,7 @@
       "n_time_masks": 2,
       "replace_with_zero": true
     },
-    "prob": 0.5
+    "prob": 0.0
   },
   {
     "type": "specsub",

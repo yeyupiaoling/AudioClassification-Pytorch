@@ -18,8 +18,7 @@ from tqdm import tqdm
 from visualdl import LogWriter
 
 from macls import SUPPORT_MODEL
-from macls.data_utils.collate_fn import collate_fn
-from macls.data_utils.featurizer.audio_featurizer import AudioFeaturizer
+from macls.data_utils.featurizer import AudioFeaturizer
 from macls.data_utils.reader import CustomDataset
 from macls.models.ecapa_tdnn import EcapaTdnn
 from macls.models.panns import CNN6, CNN10, CNN14
@@ -54,6 +53,8 @@ class PPAClsTrainer(object):
         if platform.system().lower() == 'windows':
             self.configs.dataset_conf.num_workers = 0
             logger.warning('Windows系统不支持多线程读取数据，已自动关闭！')
+        # 获取特征器
+        self.audio_featurizer = AudioFeaturizer(feature_conf=self.configs.feature_conf, **self.configs.preprocess_conf)
 
     def __setup_dataloader(self, augment_conf_path=None, is_train=False):
         # 获取训练数据
@@ -64,35 +65,35 @@ class PPAClsTrainer(object):
                 logger.info('数据增强配置文件{}不存在'.format(augment_conf_path))
             augmentation_config = '{}'
         if is_train:
-            self.train_dataset = CustomDataset(feature_conf=self.configs.feature_conf,
-                                               preprocess_configs=self.configs.preprocess_conf,
-                                               data_list_path=self.configs.dataset_conf.train_list,
+            self.train_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.train_list,
                                                do_vad=self.configs.dataset_conf.chunk_duration,
                                                chunk_duration=self.configs.dataset_conf.chunk_duration,
                                                min_duration=self.configs.dataset_conf.min_duration,
                                                augmentation_config=augmentation_config,
+                                               sample_rate=self.configs.dataset_conf.sample_rate,
+                                               use_dB_normalization=self.configs.dataset_conf.use_dB_normalization,
+                                               target_dB=self.configs.dataset_conf.target_dB,
                                                mode='train')
             train_sampler = None
             if torch.cuda.device_count() > 1:
                 # 设置支持多卡训练
                 train_sampler = DistributedSampler(dataset=self.train_dataset)
             self.train_loader = DataLoader(dataset=self.train_dataset,
-                                           collate_fn=collate_fn,
                                            shuffle=(train_sampler is None),
                                            batch_size=self.configs.dataset_conf.batch_size,
                                            sampler=train_sampler,
                                            num_workers=self.configs.dataset_conf.num_workers)
         # 获取测试数据
-        self.test_dataset = CustomDataset(feature_conf=self.configs.feature_conf,
-                                          preprocess_configs=self.configs.preprocess_conf,
-                                          data_list_path=self.configs.dataset_conf.test_list,
+        self.test_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.test_list,
                                           do_vad=self.configs.dataset_conf.chunk_duration,
                                           chunk_duration=self.configs.dataset_conf.chunk_duration,
                                           min_duration=self.configs.dataset_conf.min_duration,
+                                          sample_rate=self.configs.dataset_conf.sample_rate,
+                                          use_dB_normalization=self.configs.dataset_conf.use_dB_normalization,
+                                          target_dB=self.configs.dataset_conf.target_dB,
                                           mode='eval')
         self.test_loader = DataLoader(dataset=self.test_dataset,
                                       batch_size=self.configs.dataset_conf.batch_size,
-                                      collate_fn=collate_fn,
                                       num_workers=self.configs.dataset_conf.num_workers)
 
     def __setup_model(self, input_size, is_train=False):
@@ -116,7 +117,8 @@ class PPAClsTrainer(object):
         else:
             raise Exception(f'{self.configs.use_model} 模型不存在！')
         self.model.to(self.device)
-        summary(self.model, (98, self.test_dataset.feature_dim))
+        self.audio_featurizer.to(self.device)
+        summary(self.model, (98, self.audio_featurizer.feature_dim))
         # print(self.model)
         # 获取损失函数
         self.loss = torch.nn.CrossEntropyLoss()
@@ -223,7 +225,8 @@ class PPAClsTrainer(object):
             else:
                 audio = audio.to(self.device)
                 label = label.to(self.device).long()
-            output = self.model(audio)
+            features = self.audio_featurizer(audio)
+            output = self.model(features)
             # 计算损失值
             los = self.loss(output, label)
             self.optimizer.zero_grad()
@@ -288,7 +291,7 @@ class PPAClsTrainer(object):
         # 获取数据
         self.__setup_dataloader(augment_conf_path=augment_conf_path, is_train=True)
         # 获取模型
-        self.__setup_model(input_size=self.test_dataset.feature_dim, is_train=True)
+        self.__setup_model(input_size=self.audio_featurizer.feature_dim, is_train=True)
 
         # 支持多卡训练
         if nranks > 1 and self.use_gpu:
@@ -341,7 +344,7 @@ class PPAClsTrainer(object):
         if self.test_loader is None:
             self.__setup_dataloader()
         if self.model is None:
-            self.__setup_model(input_size=self.test_dataset.feature_dim)
+            self.__setup_model(input_size=self.audio_featurizer.feature_dim)
         if resume_model is not None:
             if os.path.isdir(resume_model):
                 resume_model = os.path.join(resume_model, 'model.pt')
@@ -360,7 +363,8 @@ class PPAClsTrainer(object):
             for batch_id, (audio, label) in enumerate(tqdm(self.test_loader)):
                 audio = audio.to(self.device)
                 label = label.to(self.device).long()
-                output = eval_model(audio)
+                features = self.audio_featurizer(audio)
+                output = eval_model(features)
                 los = self.loss(output, label)
                 label = label.data.cpu().numpy()
                 output = output.data.cpu().numpy()
@@ -392,9 +396,7 @@ class PPAClsTrainer(object):
         :param resume_model: 准备转换的模型路径
         :return:
         """
-        # 获取模型
-        audio_featurizer = AudioFeaturizer(feature_conf=self.configs.feature_conf, **self.configs.preprocess_conf)
-        self.__setup_model(input_size=audio_featurizer.feature_dim)
+        self.__setup_model(input_size=self.audio_featurizer.feature_dim)
         # 加载预训练模型
         if os.path.isdir(resume_model):
             resume_model = os.path.join(resume_model, 'model.pt')
