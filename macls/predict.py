@@ -91,6 +91,20 @@ class PPAClsPredictor:
             input_data = AudioSegment.from_wave_bytes(audio_data)
         else:
             raise Exception(f'不支持该数据类型，当前数据类型为：{type(audio_data)}')
+        # 重采样
+        if input_data.sample_rate != self.configs.dataset_conf.sample_rate:
+            input_data.resample(self.configs.dataset_conf.sample_rate)
+        # decibel normalization
+        if self.configs.dataset_conf.use_dB_normalization:
+            input_data.normalize(target_db=self.configs.dataset_conf.target_dB)
+        if 'panns' in self.configs.use_model:
+            # 对小于训练长度的复制补充
+            num_chunk_samples = int(self.configs.dataset_conf.chunk_duration * input_data.sample_rate)
+            if input_data.num_samples < num_chunk_samples:
+                shortage = num_chunk_samples - input_data.num_samples
+                input_data.pad_silence(duration=float(shortage / input_data.sample_rate * 1.1), sides='end')
+            # 裁剪需要的数据
+            input_data.crop(duration=self.configs.dataset_conf.chunk_duration)
         input_data = torch.tensor(input_data.samples, dtype=torch.float32, device=self.device).unsqueeze(0)
         audio_feature = self.audio_featurizer(input_data)
         # 执行预测

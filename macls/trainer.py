@@ -66,7 +66,7 @@ class PPAClsTrainer(object):
             augmentation_config = '{}'
         if is_train:
             self.train_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.train_list,
-                                               do_vad=self.configs.dataset_conf.chunk_duration,
+                                               do_vad=self.configs.dataset_conf.do_vad,
                                                chunk_duration=self.configs.dataset_conf.chunk_duration,
                                                min_duration=self.configs.dataset_conf.min_duration,
                                                augmentation_config=augmentation_config,
@@ -85,7 +85,7 @@ class PPAClsTrainer(object):
                                            num_workers=self.configs.dataset_conf.num_workers)
         # 获取测试数据
         self.test_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.test_list,
-                                          do_vad=self.configs.dataset_conf.chunk_duration,
+                                          do_vad=self.configs.dataset_conf.do_vad,
                                           chunk_duration=self.configs.dataset_conf.chunk_duration,
                                           min_duration=self.configs.dataset_conf.min_duration,
                                           sample_rate=self.configs.dataset_conf.sample_rate,
