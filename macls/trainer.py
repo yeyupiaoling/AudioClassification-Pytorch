@@ -259,7 +259,10 @@ class PPAClsTrainer(object):
                             f'speed: {train_speed:.2f} data/sec, eta: {eta_str}')
                 writer.add_scalar('Train/Loss', sum(loss_sum) / len(loss_sum), self.train_step)
                 writer.add_scalar('Train/Accuracy', (sum(accuracies) / len(accuracies)), self.train_step)
+                # 记录学习率
+                writer.add_scalar('Train/lr', self.scheduler.get_last_lr()[0], self.train_step)
                 train_times = []
+                self.train_step += 1
             start = time.time()
         self.scheduler.step()
 
@@ -324,8 +327,6 @@ class PPAClsTrainer(object):
                 writer.add_scalar('Test/Loss', loss, test_step)
                 test_step += 1
                 self.model.train()
-                # 记录学习率
-                writer.add_scalar('Train/lr', self.scheduler.get_last_lr()[0], epoch_id)
                 # # 保存最优模型
                 if acc >= best_acc:
                     best_acc = acc
