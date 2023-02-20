@@ -9,6 +9,7 @@ from datetime import timedelta
 import numpy as np
 import torch
 import torch.distributed as dist
+import yaml
 from sklearn.metrics import confusion_matrix
 from torch.utils.data.distributed import DistributedSampler
 from torch.optim.lr_scheduler import CosineAnnealingLR
@@ -23,7 +24,7 @@ from macls.data_utils.reader import CustomDataset
 from macls.models.ecapa_tdnn import EcapaTdnn
 from macls.models.panns import CNN6, CNN10, CNN14
 from macls.utils.logger import setup_logger
-from macls.utils.utils import dict_to_object, plot_confusion_matrix
+from macls.utils.utils import dict_to_object, plot_confusion_matrix, print_arguments
 
 logger = setup_logger(__name__)
 
@@ -42,6 +43,11 @@ class PPAClsTrainer(object):
             os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
             self.device = torch.device("cpu")
         self.use_gpu = use_gpu
+        # 读取配置文件
+        if isinstance(configs, str):
+            with open(configs, 'r', encoding='utf-8') as f:
+                configs = yaml.load(f.read(), Loader=yaml.FullLoader)
+            print_arguments(configs=configs)
         self.configs = dict_to_object(configs)
         assert self.configs.use_model in SUPPORT_MODEL, f'没有该模型：{self.configs.use_model}'
         self.model = None

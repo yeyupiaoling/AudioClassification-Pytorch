@@ -1,8 +1,6 @@
 import argparse
 import functools
 
-import yaml
-
 from macls.predict import PPAClsPredictor
 from macls.utils.utils import add_arguments, print_arguments
 
@@ -11,18 +9,13 @@ add_arg = functools.partial(add_arguments, argparser=parser)
 add_arg('configs',          str,    'configs/ecapa_tdnn.yml',   '配置文件')
 add_arg('use_gpu',          bool,   True,                       '是否使用GPU预测')
 add_arg('audio_path',       str,    'dataset/UrbanSound8K/audio/fold5/156634-5-2-5.wav', '音频路径')
-add_arg('model_path',       str,    'models/{}_{}/best_model/', '导出的预测模型文件路径')
+add_arg('model_path',       str,    'models/ecapa_tdnn_MelSpectrogram/best_model/', '导出的预测模型文件路径')
 args = parser.parse_args()
-
-# 读取配置文件
-with open(args.configs, 'r', encoding='utf-8') as f:
-    configs = yaml.load(f.read(), Loader=yaml.FullLoader)
-print_arguments(args, configs)
+print_arguments(args=args)
 
 # 获取识别器
-predictor = PPAClsPredictor(configs=configs,
-                            model_path=args.model_path.format(configs['use_model'],
-                                                              configs['preprocess_conf']['feature_method']),
+predictor = PPAClsPredictor(configs=args.configs,
+                            model_path=args.model_path,
                             use_gpu=args.use_gpu)
 
 label, score = predictor.predict(audio_data=args.audio_path)

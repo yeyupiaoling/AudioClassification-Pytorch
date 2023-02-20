@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import torch
+import yaml
 
 from macls import SUPPORT_MODEL
 from macls.data_utils.audio import AudioSegment
@@ -9,7 +10,7 @@ from macls.data_utils.featurizer import AudioFeaturizer
 from macls.models.ecapa_tdnn import EcapaTdnn
 from macls.models.panns import CNN6, CNN10, CNN14
 from macls.utils.logger import setup_logger
-from macls.utils.utils import dict_to_object
+from macls.utils.utils import dict_to_object, print_arguments
 
 logger = setup_logger(__name__)
 
@@ -31,6 +32,11 @@ class PPAClsPredictor:
         else:
             os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
             self.device = torch.device("cpu")
+        # 读取配置文件
+        if isinstance(configs, str):
+            with open(configs, 'r', encoding='utf-8') as f:
+                configs = yaml.load(f.read(), Loader=yaml.FullLoader)
+            print_arguments(configs=configs)
         self.configs = dict_to_object(configs)
         assert self.configs.use_model in SUPPORT_MODEL, f'没有该模型：{self.configs.use_model}'
         # 获取特征器
