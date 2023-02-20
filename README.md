@@ -68,7 +68,8 @@ CUDA_VISIBLE_DEVICES=0 python train.py
 CUDA_VISIBLE_DEVICES=0,1 torchrun --standalone --nnodes=1 --nproc_per_node=2 train.py
 ```
 
-每轮训练结束之后都会执行一次评估，和保存模型。评估会出来输出准确率，还保存了混合矩阵图片，保存路径`output/images/`，如下。
+# 评估
+每轮训练结束可以执行评估，评估会出来输出准确率，还保存了混合矩阵图片，保存路径`output/images/`，如下。
 ![混合矩阵](./images/image1.png)
 
 # 预测
