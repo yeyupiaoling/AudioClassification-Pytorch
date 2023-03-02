@@ -29,7 +29,7 @@ from macls.utils.utils import dict_to_object, plot_confusion_matrix, print_argum
 logger = setup_logger(__name__)
 
 
-class PPAClsTrainer(object):
+class MAClsTrainer(object):
     def __init__(self, configs, use_gpu=True):
         """ ppvector集成工具类
 

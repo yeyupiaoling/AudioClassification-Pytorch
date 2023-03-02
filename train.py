@@ -1,7 +1,7 @@
 import argparse
 import functools
 
-from macls.trainer import PPAClsTrainer
+from macls.trainer import MAClsTrainer
 from macls.utils.utils import add_arguments, print_arguments
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -17,7 +17,7 @@ args = parser.parse_args()
 print_arguments(args=args)
 
 # 获取训练器
-trainer = PPAClsTrainer(configs=args.configs, use_gpu=args.use_gpu)
+trainer = MAClsTrainer(configs=args.configs, use_gpu=args.use_gpu)
 
 trainer.train(save_model_path=args.save_model_path,
               resume_model=args.resume_model,

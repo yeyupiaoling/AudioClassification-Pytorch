@@ -2,7 +2,7 @@ import argparse
 import functools
 import time
 
-from macls.trainer import PPAClsTrainer
+from macls.trainer import MAClsTrainer
 from macls.utils.utils import add_arguments, print_arguments
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -15,7 +15,7 @@ args = parser.parse_args()
 print_arguments(args=args)
 
 # 获取训练器
-trainer = PPAClsTrainer(configs=args.configs, use_gpu=args.use_gpu)
+trainer = MAClsTrainer(configs=args.configs, use_gpu=args.use_gpu)
 
 # 开始评估
 start = time.time()

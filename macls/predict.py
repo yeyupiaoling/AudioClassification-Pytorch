@@ -15,7 +15,7 @@ from macls.utils.utils import dict_to_object, print_arguments
 logger = setup_logger(__name__)
 
 
-class PPAClsPredictor:
+class MAClsPredictor:
     def __init__(self,
                  configs,
                  model_path='models/ecapa_tdnn_spectrogram/best_model/',

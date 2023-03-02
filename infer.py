@@ -1,7 +1,7 @@
 import argparse
 import functools
 
-from macls.predict import PPAClsPredictor
+from macls.predict import MAClsPredictor
 from macls.utils.utils import add_arguments, print_arguments
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -14,9 +14,9 @@ args = parser.parse_args()
 print_arguments(args=args)
 
 # 获取识别器
-predictor = PPAClsPredictor(configs=args.configs,
-                            model_path=args.model_path,
-                            use_gpu=args.use_gpu)
+predictor = MAClsPredictor(configs=args.configs,
+                           model_path=args.model_path,
+                           use_gpu=args.use_gpu)
 
 label, score = predictor.predict(audio_data=args.audio_path)
 
