@@ -318,6 +318,7 @@ class MAClsTrainer(object):
         # 支持多卡训练
         if nranks > 1 and self.use_gpu:
             self.model.to(local_rank)
+            self.audio_featurizer.to(local_rank)
             self.model = torch.nn.parallel.DistributedDataParallel(self.model, device_ids=[local_rank])
         logger.info('训练数据：{}'.format(len(self.train_dataset)))
 
