@@ -10,7 +10,7 @@ add_arg = functools.partial(add_arguments, argparser=parser)
 add_arg('configs',          str,   'configs/ecapa_tdnn.yml',    "配置文件")
 add_arg("use_gpu",          bool,  True,                        "是否使用GPU评估模型")
 add_arg('save_matrix_path', str,   'output/images/',            "保存混合矩阵的路径")
-add_arg('resume_model',     str,   'models/ecapa_tdnn_MelSpectrogram/best_model/',  "模型的路径")
+add_arg('resume_model',     str,   'models/EcapaTdnn_MelSpectrogram/best_model/',  "模型的路径")
 args = parser.parse_args()
 print_arguments(args=args)
 

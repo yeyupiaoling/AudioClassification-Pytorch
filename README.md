@@ -17,6 +17,14 @@
  - Pytorch 1.12.1
  - Windows 10 or Ubuntu 18.04
 
+# 项目特性
+
+1. 支持模型：EcapaTdnn、PANNS、TDNN、Res2Net、ResNetSE
+2. 支持池化层：AttentiveStatsPool(ASP)、SelfAttentivePooling(SAP)、TemporalStatisticsPooling(TSP)、TemporalAveragePooling(
+   TAP)
+3. 支持预处理方法：MelSpectrogram、Spectrogram、MFCC
+
+
 ## 安装环境
 
  - 首先安装的是Pytorch的GPU版本，如果已经安装过了，请跳过。

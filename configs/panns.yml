@@ -56,5 +56,5 @@ train_conf:
   max_epoch: 30
   log_interval: 10
 
-# 所使用的模型，支持panns_cnn6、panns_cnn10、panns_cnn14
-use_model: 'panns_cnn10'
+# 所使用的模型，支持PANNS_CNN6、PANNS_CNN10、PANNS_CNN14
+use_model: 'PANNS_CNN10'

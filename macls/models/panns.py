@@ -68,7 +68,7 @@ class ConvBlock5x5(nn.Module):
         return x
 
 
-class CNN6(nn.Module):
+class PANNS_CNN6(nn.Module):
     """
     The CNN14(14-layer CNNs) mainly consist of 4 convolutional blocks while each convolutional
     block consists of 1 convolutional layers with a kernel size of 5 × 5.
@@ -81,7 +81,7 @@ class CNN6(nn.Module):
 
     def __init__(self, num_class, input_size, dropout=0.1, extract_embedding: bool = True):
 
-        super(CNN6, self).__init__()
+        super(PANNS_CNN6, self).__init__()
         self.bn0 = nn.BatchNorm2d(input_size)
         self.conv_block1 = ConvBlock5x5(in_channels=1, out_channels=64)
         self.conv_block2 = ConvBlock5x5(in_channels=64, out_channels=128)
@@ -130,7 +130,7 @@ class CNN6(nn.Module):
         return logits
 
 
-class CNN10(nn.Module):
+class PANNS_CNN10(nn.Module):
     """
     The CNN10(14-layer CNNs) mainly consist of 4 convolutional blocks while each convolutional
     block consists of 2 convolutional layers with a kernel size of 3 × 3.
@@ -143,7 +143,7 @@ class CNN10(nn.Module):
 
     def __init__(self, num_class, input_size, dropout=0.1, extract_embedding: bool = True):
 
-        super(CNN10, self).__init__()
+        super(PANNS_CNN10, self).__init__()
         self.bn0 = nn.BatchNorm2d(input_size)
         self.conv_block1 = ConvBlock(in_channels=1, out_channels=64)
         self.conv_block2 = ConvBlock(in_channels=64, out_channels=128)
@@ -192,7 +192,7 @@ class CNN10(nn.Module):
         return logits
 
 
-class CNN14(nn.Module):
+class PANNS_CNN14(nn.Module):
     """
     The CNN14(14-layer CNNs) mainly consist of 6 convolutional blocks while each convolutional
     block consists of 2 convolutional layers with a kernel size of 3 × 3.
@@ -205,7 +205,7 @@ class CNN14(nn.Module):
 
     def __init__(self, num_class, input_size, dropout=0.1, extract_embedding: bool = True):
 
-        super(CNN14, self).__init__()
+        super(PANNS_CNN14, self).__init__()
         self.bn0 = nn.BatchNorm2d(input_size)
         self.conv_block1 = ConvBlock(in_channels=1, out_channels=64)
         self.conv_block2 = ConvBlock(in_channels=64, out_channels=128)

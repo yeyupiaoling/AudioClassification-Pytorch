@@ -1,2 +1,2 @@
 # 项目支持的模型
-SUPPORT_MODEL = ['ecapa_tdnn', 'panns_cnn6', 'panns_cnn10', 'panns_cnn14']
+SUPPORT_MODEL = ['EcapaTdnn', 'PANNS_CNN6', 'PANNS_CNN10', 'PANNS_CNN14', 'Res2Net', 'ResNetSE', 'TDNN']

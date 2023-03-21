@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import Parameter
+
+from macls.models.pooling import AttentiveStatsPool, TemporalAveragePooling
+from macls.models.pooling import SelfAttentivePooling, TemporalStatisticsPooling
 
 
 class Res2Conv1dReluBn(nn.Module):
@@ -72,25 +74,8 @@ def SE_Res2Block(channels, kernel_size, stride, padding, dilation, scale):
     )
 
 
-class AttentiveStatsPool(nn.Module):
-    def __init__(self, in_dim, bottleneck_dim):
-        super().__init__()
-        # Use Conv1d with stride == 1 rather than Linear, then we don't need to transpose inputs.
-        self.linear1 = nn.Conv1d(in_dim, bottleneck_dim, kernel_size=1)  # equals W and b in the paper
-        self.linear2 = nn.Conv1d(bottleneck_dim, in_dim, kernel_size=1)  # equals V and k in the paper
-
-    def forward(self, x):
-        # DON'T use ReLU here! In experiments, I find ReLU hard to converge.
-        alpha = torch.tanh(self.linear1(x))
-        alpha = torch.softmax(self.linear2(alpha), dim=2)
-        mean = torch.sum(alpha * x, dim=2)
-        residuals = torch.sum(alpha * x ** 2, dim=2) - mean ** 2
-        std = torch.sqrt(residuals.clamp(min=1e-9))
-        return torch.cat([mean, std], dim=1)
-
-
 class EcapaTdnn(nn.Module):
-    def __init__(self, num_classes, input_size=80, channels=512, embd_dim=192):
+    def __init__(self, num_class, input_size=80, channels=512, embd_dim=192, pooling_type="ASP"):
         super().__init__()
         self.layer1 = Conv1dReluBn(input_size, channels, kernel_size=5, padding=2, dilation=1)
         self.layer2 = SE_Res2Block(channels, kernel_size=3, stride=1, padding=2, dilation=2, scale=8)
@@ -98,13 +83,31 @@ class EcapaTdnn(nn.Module):
         self.layer4 = SE_Res2Block(channels, kernel_size=3, stride=1, padding=4, dilation=4, scale=8)
 
         cat_channels = channels * 3
-        out_channels = cat_channels * 2
+        self.emb_size = embd_dim
         self.conv = nn.Conv1d(cat_channels, cat_channels, kernel_size=1)
-        self.pooling = AttentiveStatsPool(cat_channels, 128)
-        self.bn1 = nn.BatchNorm1d(out_channels)
-        self.linear = nn.Linear(out_channels, embd_dim)
-        self.bn2 = nn.BatchNorm1d(embd_dim)
-        self.fc = nn.Linear(embd_dim, num_classes)
+        if pooling_type == "ASP":
+            self.pooling = AttentiveStatsPool(cat_channels, 128)
+            self.bn1 = nn.BatchNorm1d(cat_channels * 2)
+            self.linear = nn.Linear(cat_channels * 2, embd_dim)
+            self.bn2 = nn.BatchNorm1d(embd_dim)
+        elif pooling_type == "SAP":
+            self.pooling = SelfAttentivePooling(cat_channels, 128)
+            self.bn1 = nn.BatchNorm1d(cat_channels)
+            self.linear = nn.Linear(cat_channels, embd_dim)
+            self.bn2 = nn.BatchNorm1d(embd_dim)
+        elif pooling_type == "TAP":
+            self.pooling = TemporalAveragePooling()
+            self.bn1 = nn.BatchNorm1d(cat_channels)
+            self.linear = nn.Linear(cat_channels, embd_dim)
+            self.bn2 = nn.BatchNorm1d(embd_dim)
+        elif pooling_type == "TSP":
+            self.pooling = TemporalStatisticsPooling()
+            self.bn1 = nn.BatchNorm1d(cat_channels * 2)
+            self.linear = nn.Linear(cat_channels * 2, embd_dim)
+            self.bn2 = nn.BatchNorm1d(embd_dim)
+        else:
+            raise Exception(f'没有{pooling_type}池化层！')
+        self.fc = nn.Linear(embd_dim, num_class)
 
     def forward(self, x):
         """
