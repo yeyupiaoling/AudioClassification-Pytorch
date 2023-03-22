@@ -21,10 +21,10 @@ logger = setup_logger(__name__)
 class MAClsPredictor:
     def __init__(self,
                  configs,
-                 model_path='models/ecapa_tdnn_spectrogram/best_model/',
+                 model_path='models/EcapaTdnn_MelSpectrogram/best_model/',
                  use_gpu=True):
         """
-        语音识别预测工具
+        声音分类预测工具
         :param configs: 配置参数
         :param model_path: 导出的预测模型文件夹路径
         :param use_gpu: 是否使用GPU预测

@@ -34,7 +34,7 @@ logger = setup_logger(__name__)
 
 class MAClsTrainer(object):
     def __init__(self, configs, use_gpu=True):
-        """ ppvector集成工具类
+        """ macls集成工具类
 
         :param configs: 配置字典
         :param use_gpu: 是否使用GPU训练模型
@@ -370,7 +370,7 @@ class MAClsTrainer(object):
                 # 保存模型
                 self.__save_checkpoint(save_model_path=save_model_path, epoch_id=epoch_id, best_acc=acc)
 
-    def evaluate(self, resume_model='models/ecapa_tdnn_spectrogram/best_model/', save_matrix_path=None):
+    def evaluate(self, resume_model='models/EcapaTdnn_MelSpectrogram/best_model/', save_matrix_path=None):
         """
         评估模型
         :param resume_model: 所使用的模型
@@ -425,7 +425,7 @@ class MAClsTrainer(object):
         self.model.train()
         return loss, acc
 
-    def export(self, save_model_path='models/', resume_model='models/ecapa_tdnn_spectrogram/best_model/'):
+    def export(self, save_model_path='models/', resume_model='models/EcapaTdnn_MelSpectrogram/best_model/'):
         """
         导出预测模型
         :param save_model_path: 模型保存的路径
