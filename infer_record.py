@@ -25,10 +25,10 @@ if __name__ == '__main__':
     try:
         while True:
             # 加载数据
-            audio_path = record_audio.record(record_seconds=args.record_seconds)
+            input(f"按下回车键开机录音，录音{args.record_seconds}秒中：")
+            audio_data = record_audio.record(record_seconds=args.record_seconds)
             # 获取预测结果
-            label, s = predictor.predict(audio_path)
+            label, s = predictor.predict(audio_data, sample_rate=record_audio.sample_rate)
             print(f'预测的标签为：{label}，得分：{s}')
     except Exception as e:
         print(e)
-        record_audio.close()
