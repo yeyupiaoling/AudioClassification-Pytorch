@@ -176,11 +176,11 @@ class MAClsPredictor:
             # 将数据插入都0张量中，实现了padding
             inputs[x, :seq_length] = tensor[:]
             input_lens_ratio.append(seq_length / max_audio_length)
-        audios_data = torch.tensor(inputs, dtype=torch.float32, device=self.device)
-        input_lens_ratio = torch.tensor(input_lens_ratio, dtype=torch.float32, device=self.device)
-        audio_feature, _ = self._audio_featurizer(audios_data, input_lens_ratio)
+        input_lens_ratio = torch.tensor(input_lens_ratio, dtype=torch.float32)
+        inputs = torch.tensor(inputs, dtype=torch.float32, device=self.device)
+        audio_feature = self._audio_featurizer(inputs)
         # 执行预测
-        output = self.predictor(audios_data)
+        output = self.predictor(audio_feature)
         results = torch.nn.functional.softmax(output, dim=-1)
         results = results.data.cpu().numpy()
         labels, scores = [], []
