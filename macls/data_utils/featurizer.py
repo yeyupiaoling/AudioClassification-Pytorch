@@ -2,6 +2,8 @@ import torch
 from torch import nn
 from torchaudio.transforms import MelSpectrogram, Spectrogram, MFCC
 
+from macls.data_utils.utils import make_pad_mask
+
 
 class AudioFeaturizer(nn.Module):
     """音频特征器
@@ -30,11 +32,13 @@ class AudioFeaturizer(nn.Module):
         else:
             raise Exception(f'预处理方法 {self._feature_method} 不存在!')
 
-    def forward(self, waveforms):
-        """从音频中提取音频特征
+    def forward(self, waveforms, input_lens_ratio):
+        """从AudioSegment中提取音频特征
 
-        :param waveforms: Audio to extract features from.
-        :type waveforms: ndarray
+        :param waveforms: Audio segment to extract features from.
+        :type waveforms: AudioSegment
+        :param input_lens_ratio: input length ratio
+        :type input_lens_ratio: list
         :return: Spectrogram audio feature in 2darray.
         :rtype: ndarray
         """
@@ -44,7 +48,11 @@ class AudioFeaturizer(nn.Module):
         mean = torch.mean(feature, 1, keepdim=True)
         std = torch.std(feature, 1, keepdim=True)
         feature = (feature - mean) / (std + 1e-5)
-        return feature
+        input_lens = input_lens_ratio * feature.shape[1]
+        input_lens = input_lens.int()
+        masks = ~make_pad_mask(input_lens).int().unsqueeze(-1)
+        feature = feature * masks
+        return feature, input_lens
 
     @property
     def feature_dim(self):

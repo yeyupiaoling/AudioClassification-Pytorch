@@ -141,7 +141,8 @@ class MAClsPredictor:
             # 裁剪需要的数据
             input_data.crop(duration=self.configs.dataset_conf.chunk_duration)
         input_data = torch.tensor(input_data.samples, dtype=torch.float32, device=self.device).unsqueeze(0)
-        audio_feature = self._audio_featurizer(input_data)
+        input_len_ratio = torch.tensor([1], dtype=torch.float32, device=self.device)
+        audio_feature, _ = self._audio_featurizer(input_data, input_len_ratio)
         # 执行预测
         output = self.predictor(audio_feature)
         result = torch.nn.functional.softmax(output, dim=-1)[0]
@@ -176,9 +177,9 @@ class MAClsPredictor:
             # 将数据插入都0张量中，实现了padding
             inputs[x, :seq_length] = tensor[:]
             input_lens_ratio.append(seq_length / max_audio_length)
-        input_lens_ratio = torch.tensor(input_lens_ratio, dtype=torch.float32)
+        input_lens_ratio = torch.tensor(input_lens_ratio, dtype=torch.float32, device=self.device)
         inputs = torch.tensor(inputs, dtype=torch.float32, device=self.device)
-        audio_feature = self._audio_featurizer(inputs)
+        audio_feature, _ = self._audio_featurizer(inputs, input_lens_ratio)
         # 执行预测
         output = self.predictor(audio_feature)
         results = torch.nn.functional.softmax(output, dim=-1)
