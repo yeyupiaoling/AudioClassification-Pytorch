@@ -132,14 +132,8 @@ class MAClsPredictor:
         """
         # 加载音频文件，并进行预处理
         input_data = self._load_audio(audio_data=audio_data, sample_rate=sample_rate)
-        if 'PANNS' in self.configs.use_model:
-            # 对小于训练长度的复制补充
-            num_chunk_samples = int(self.configs.dataset_conf.chunk_duration * input_data.sample_rate)
-            if input_data.num_samples < num_chunk_samples:
-                shortage = num_chunk_samples - input_data.num_samples
-                input_data.pad_silence(duration=float(shortage / input_data.sample_rate * 1.1), sides='end')
-            # 裁剪需要的数据
-            input_data.crop(duration=self.configs.dataset_conf.chunk_duration)
+        assert input_data.duration >= self.configs.dataset_conf.min_duration, \
+            f'音频太短，最小应该为{self.configs.dataset_conf.min_duration}s，当前音频为{input_data.duration}s'
         input_data = torch.tensor(input_data.samples, dtype=torch.float32, device=self.device).unsqueeze(0)
         input_len_ratio = torch.tensor([1], dtype=torch.float32, device=self.device)
         audio_feature, _ = self._audio_featurizer(input_data, input_len_ratio)

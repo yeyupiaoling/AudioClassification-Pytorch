@@ -19,6 +19,7 @@ from tqdm import tqdm
 from visualdl import LogWriter
 
 from macls import SUPPORT_MODEL
+from macls.data_utils.collate_fn import collate_fn
 from macls.data_utils.featurizer import AudioFeaturizer
 from macls.data_utils.reader import CustomDataset
 from macls.models.ecapa_tdnn import EcapaTdnn
@@ -76,7 +77,7 @@ class MAClsTrainer(object):
         if is_train:
             self.train_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.train_list,
                                                do_vad=self.configs.dataset_conf.do_vad,
-                                               chunk_duration=self.configs.dataset_conf.chunk_duration,
+                                               max_duration=self.configs.dataset_conf.max_duration,
                                                min_duration=self.configs.dataset_conf.min_duration,
                                                augmentation_config=augmentation_config,
                                                sample_rate=self.configs.dataset_conf.sample_rate,
@@ -88,6 +89,7 @@ class MAClsTrainer(object):
                 # 设置支持多卡训练
                 train_sampler = DistributedSampler(dataset=self.train_dataset)
             self.train_loader = DataLoader(dataset=self.train_dataset,
+                                           collate_fn=collate_fn,
                                            shuffle=(train_sampler is None),
                                            batch_size=self.configs.dataset_conf.batch_size,
                                            sampler=train_sampler,
@@ -95,7 +97,7 @@ class MAClsTrainer(object):
         # 获取测试数据
         self.test_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.test_list,
                                           do_vad=self.configs.dataset_conf.do_vad,
-                                          chunk_duration=self.configs.dataset_conf.chunk_duration,
+                                          max_duration=self.configs.dataset_conf.max_duration,
                                           min_duration=self.configs.dataset_conf.min_duration,
                                           sample_rate=self.configs.dataset_conf.sample_rate,
                                           use_dB_normalization=self.configs.dataset_conf.use_dB_normalization,
@@ -103,6 +105,7 @@ class MAClsTrainer(object):
                                           mode='eval')
         self.test_loader = DataLoader(dataset=self.test_dataset,
                                       batch_size=self.configs.dataset_conf.batch_size,
+                                      collate_fn=collate_fn,
                                       num_workers=self.configs.dataset_conf.num_workers)
 
     def __setup_model(self, input_size, is_train=False):
@@ -252,14 +255,16 @@ class MAClsTrainer(object):
         train_times, accuracies, loss_sum = [], [], []
         start = time.time()
         sum_batch = len(self.train_loader) * self.configs.train_conf.max_epoch
-        for batch_id, (audio, label) in enumerate(self.train_loader):
+        for batch_id, (audio, label, input_lens_ratio) in enumerate(self.train_loader):
             if nranks > 1:
                 audio = audio.to(local_rank)
+                input_lens_ratio = input_lens_ratio.to(local_rank)
                 label = label.to(local_rank).long()
             else:
                 audio = audio.to(self.device)
+                input_lens_ratio = input_lens_ratio.to(self.device)
                 label = label.to(self.device).long()
-            features = self.audio_featurizer(audio)
+            features, _ = self.audio_featurizer(audio, input_lens_ratio)
             output = self.model(features)
             # 计算损失值
             los = self.loss(output, label)
@@ -396,10 +401,11 @@ class MAClsTrainer(object):
 
         accuracies, losses, preds, labels = [], [], [], []
         with torch.no_grad():
-            for batch_id, (audio, label) in enumerate(tqdm(self.test_loader)):
+            for batch_id, (audio, label, input_lens_ratio) in enumerate(tqdm(self.test_loader)):
                 audio = audio.to(self.device)
+                input_lens_ratio = input_lens_ratio.to(self.device)
                 label = label.to(self.device).long()
-                features = self.audio_featurizer(audio)
+                features, _ = self.audio_featurizer(audio, input_lens_ratio)
                 output = eval_model(features)
                 los = self.loss(output, label)
                 label = label.data.cpu().numpy()
