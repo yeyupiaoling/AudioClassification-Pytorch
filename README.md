@@ -65,6 +65,61 @@ dataset/UrbanSound8K/audio/fold3/107228-5-0-0.wav	5
 dataset/UrbanSound8K/audio/fold4/109711-3-2-4.wav	3
 ```
 
+# 修改预处理方法
+
+配置文件中默认使用的是MelSpectrogram预处理方法，如果要使用其他预处理方法，可以修改配置文件中的安装下面方式修改，具体的值可以根据自己情况修改。
+
+1. `MelSpectrogram`预处理方法如下：
+
+```yaml
+preprocess_conf:
+  # 音频预处理方法，支持：MelSpectrogram、Spectrogram、MFCC
+  feature_method: 'MelSpectrogram'
+
+# MelSpectrogram的参数，其他的预处理方法查看对应API设设置参数
+feature_conf:
+  sample_rate: 16000
+  n_fft: 1024
+  hop_length: 320
+  win_length: 1024
+  f_min: 50.0
+  f_max: 14000.0
+  n_mels: 64
+```
+
+1. `pectrogram'`预处理方法如下：
+
+```yaml
+preprocess_conf:
+  # 音频预处理方法，支持：MelSpectrogram、Spectrogram、MFCC
+  feature_method: 'Spectrogram'
+
+# Spectrogram的参数，其他的预处理方法查看对应API设设置参数
+feature_conf:
+  n_fft: 1024
+  hop_length: 320
+  win_length: 1024
+```
+
+3. `MFCC`预处理方法如下：
+
+```yaml
+preprocess_conf:
+  # 音频预处理方法，支持：MelSpectrogram、Spectrogram、MFCC
+  feature_method: 'MFCC'
+
+# MFCC的参数，其他的预处理方法查看对应API设设置参数
+feature_conf:
+  sample_rate: 16000
+  n_fft: 1024
+  hop_length: 320
+  win_length: 1024
+  f_min: 50.0
+  f_max: 14000.0
+  n_mels: 64
+  n_mfcc: 40
+```
+
 ## 训练
 
 接着就可以开始训练模型了，创建 `train.py`。配置文件里面的参数一般不需要修改，但是这几个是需要根据自己实际的数据集进行调整的，首先最重要的就是分类大小`dataset_conf.num_class`，这个每个数据集的分类大小可能不一样，根据自己的实际情况设定。然后是`dataset_conf.batch_size`，如果是显存不够的话，可以减小这个参数。
