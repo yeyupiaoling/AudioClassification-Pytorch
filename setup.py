@@ -1,6 +1,8 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.3.5"
+import macls
+
+VERSION = macls.__version__
 
 
 def readme():

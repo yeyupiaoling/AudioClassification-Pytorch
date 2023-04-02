@@ -236,7 +236,8 @@ class MAClsTrainer(object):
         torch.save(self.optimizer.state_dict(), os.path.join(model_path, 'optimizer.pt'))
         torch.save(state_dict, os.path.join(model_path, 'model.pt'))
         with open(os.path.join(model_path, 'model.state'), 'w', encoding='utf-8') as f:
-            f.write('{"last_epoch": %d, "accuracy": %f}' % (epoch_id, best_acc))
+            data = {"last_epoch": epoch_id, "accuracy": best_acc, "version": __version__}
+            f.write(json.dumps(data))
         if not best_model:
             last_model_path = os.path.join(save_model_path,
                                            f'{self.configs.use_model}_{self.configs.preprocess_conf.feature_method}',
