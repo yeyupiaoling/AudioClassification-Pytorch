@@ -166,7 +166,7 @@ class MAClsPredictor:
         inputs = np.zeros((batch_size, max_audio_length), dtype='float32')
         input_lens_ratio = []
         for x in range(batch_size):
-            tensor = batch[x]
+            tensor = audios_data1[x]
             seq_length = tensor.shape[0]
             # 将数据插入都0张量中，实现了padding
             inputs[x, :seq_length] = tensor[:]
