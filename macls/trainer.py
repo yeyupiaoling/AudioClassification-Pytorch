@@ -18,7 +18,7 @@ from torchinfo import summary
 from tqdm import tqdm
 from visualdl import LogWriter
 
-from macls import SUPPORT_MODEL
+from macls import SUPPORT_MODEL, __version__
 from macls.data_utils.collate_fn import collate_fn
 from macls.data_utils.featurizer import AudioFeaturizer
 from macls.data_utils.reader import CustomDataset
