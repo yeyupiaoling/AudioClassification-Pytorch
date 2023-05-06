@@ -6,7 +6,7 @@
 **欢迎大家扫码入QQ群讨论**，或者直接搜索QQ群号`758170167`，问题答案为博主Github的ID`yeyupiaoling`。
 
 <div align="center">
-  <img src="images/qq.png"/>
+  <img src="docs/images/qq.png"/>
 </div>
 
 
@@ -133,7 +133,7 @@ CUDA_VISIBLE_DEVICES=0,1 torchrun --standalone --nnodes=1 --nproc_per_node=2 tra
 
 # 评估
 每轮训练结束可以执行评估，评估会出来输出准确率，还保存了混合矩阵图片，保存路径`output/images/`，如下。
-![混合矩阵](./images/image1.png)
+![混合矩阵](docs/images/image1.png)
 
 # 预测
 
