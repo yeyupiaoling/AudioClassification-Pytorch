@@ -42,7 +42,7 @@ class CustomDataset(Dataset):
         self._target_dB = target_dB
         self._augmentation_pipeline = AugmentationPipeline(augmentation_config=augmentation_config)
         # 获取数据列表
-        with open(data_list_path, 'r') as f:
+        with open(data_list_path, 'r', encoding='utf-8') as f:
             self.lines = f.readlines()
 
     def __getitem__(self, idx):
