@@ -28,6 +28,7 @@ from macls.models.res2net import Res2Net
 from macls.models.resnet_se import ResNetSE
 from macls.models.tdnn import TDNN
 from macls.utils.logger import setup_logger
+from macls.utils.scheduler import WarmupCosineSchedulerLR
 from macls.utils.utils import dict_to_object, plot_confusion_matrix, print_arguments
 
 logger = setup_logger(__name__)
@@ -61,25 +62,19 @@ class MAClsTrainer(object):
             lines = f.readlines()
         self.class_labels = [l.replace('\n', '') for l in lines]
         if platform.system().lower() == 'windows':
-            self.configs.dataset_conf.num_workers = 0
+            self.configs.dataset_conf.dataLoader.num_workers = 0
             logger.warning('Windows系统不支持多线程读取数据，已自动关闭！')
         # 获取特征器
-        self.audio_featurizer = AudioFeaturizer(feature_conf=self.configs.feature_conf, **self.configs.preprocess_conf)
+        self.audio_featurizer = AudioFeaturizer(feature_method=self.configs.preprocess_conf.feature_method,
+                                                method_args=self.configs.preprocess_conf.get('method_args', {}))
 
-    def __setup_dataloader(self, augment_conf_path=None, is_train=False):
-        # 获取训练数据
-        if augment_conf_path is not None and os.path.exists(augment_conf_path) and is_train:
-            augmentation_config = io.open(augment_conf_path, mode='r', encoding='utf8').read()
-        else:
-            if augment_conf_path is not None and not os.path.exists(augment_conf_path):
-                logger.info('数据增强配置文件{}不存在'.format(augment_conf_path))
-            augmentation_config = '{}'
+    def __setup_dataloader(self, is_train=False):
         if is_train:
             self.train_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.train_list,
                                                do_vad=self.configs.dataset_conf.do_vad,
                                                max_duration=self.configs.dataset_conf.max_duration,
                                                min_duration=self.configs.dataset_conf.min_duration,
-                                               augmentation_config=augmentation_config,
+                                               aug_conf=self.configs.dataset_conf.aug_conf,
                                                sample_rate=self.configs.dataset_conf.sample_rate,
                                                use_dB_normalization=self.configs.dataset_conf.use_dB_normalization,
                                                target_dB=self.configs.dataset_conf.target_dB,
@@ -91,53 +86,38 @@ class MAClsTrainer(object):
             self.train_loader = DataLoader(dataset=self.train_dataset,
                                            collate_fn=collate_fn,
                                            shuffle=(train_sampler is None),
-                                           batch_size=self.configs.dataset_conf.batch_size,
                                            sampler=train_sampler,
-                                           num_workers=self.configs.dataset_conf.num_workers)
+                                           **self.configs.dataset_conf.dataLoader)
         # 获取测试数据
         self.test_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.test_list,
                                           do_vad=self.configs.dataset_conf.do_vad,
-                                          max_duration=self.configs.dataset_conf.max_duration,
+                                          max_duration=self.configs.dataset_conf.eval_conf.max_duration,
                                           min_duration=self.configs.dataset_conf.min_duration,
                                           sample_rate=self.configs.dataset_conf.sample_rate,
                                           use_dB_normalization=self.configs.dataset_conf.use_dB_normalization,
                                           target_dB=self.configs.dataset_conf.target_dB,
                                           mode='eval')
         self.test_loader = DataLoader(dataset=self.test_dataset,
-                                      batch_size=self.configs.dataset_conf.batch_size,
                                       collate_fn=collate_fn,
-                                      num_workers=self.configs.dataset_conf.num_workers)
+                                      batch_size=self.configs.dataset_conf.eval_conf.batch_size,
+                                      num_workers=self.configs.dataset_conf.dataLoader.num_workers)
 
     def __setup_model(self, input_size, is_train=False):
         # 获取模型
         if self.configs.use_model == 'EcapaTdnn':
-            self.model = EcapaTdnn(input_size=input_size,
-                                   num_class=self.configs.dataset_conf.num_class,
-                                   **self.configs.model_conf)
+            self.model = EcapaTdnn(input_size=input_size, **self.configs.model_conf)
         elif self.configs.use_model == 'PANNS_CNN6':
-            self.model = PANNS_CNN6(input_size=input_size,
-                                    num_class=self.configs.dataset_conf.num_class,
-                                    **self.configs.model_conf)
+            self.model = PANNS_CNN6(input_size=input_size, **self.configs.model_conf)
         elif self.configs.use_model == 'PANNS_CNN10':
-            self.model = PANNS_CNN10(input_size=input_size,
-                                     num_class=self.configs.dataset_conf.num_class,
-                                     **self.configs.model_conf)
+            self.model = PANNS_CNN10(input_size=input_size, **self.configs.model_conf)
         elif self.configs.use_model == 'PANNS_CNN14':
-            self.model = PANNS_CNN14(input_size=input_size,
-                                     num_class=self.configs.dataset_conf.num_class,
-                                     **self.configs.model_conf)
+            self.model = PANNS_CNN14(input_size=input_size, **self.configs.model_conf)
         elif self.configs.use_model == 'Res2Net':
-            self.model = Res2Net(input_size=input_size,
-                                 num_class=self.configs.dataset_conf.num_class,
-                                 **self.configs.model_conf)
+            self.model = Res2Net(input_size=input_size, **self.configs.model_conf)
         elif self.configs.use_model == 'ResNetSE':
-            self.model = ResNetSE(input_size=input_size,
-                                  num_class=self.configs.dataset_conf.num_class,
-                                  **self.configs.model_conf)
+            self.model = ResNetSE(input_size=input_size, **self.configs.model_conf)
         elif self.configs.use_model == 'TDNN':
-            self.model = TDNN(input_size=input_size,
-                              num_class=self.configs.dataset_conf.num_class,
-                              **self.configs.model_conf)
+            self.model = TDNN(input_size=input_size, **self.configs.model_conf)
         else:
             raise Exception(f'{self.configs.use_model} 模型不存在！')
         self.model.to(self.device)
@@ -165,7 +145,20 @@ class MAClsTrainer(object):
             else:
                 raise Exception(f'不支持优化方法：{optimizer}')
             # 学习率衰减函数
-            self.scheduler = CosineAnnealingLR(self.optimizer, T_max=int(self.configs.train_conf.max_epoch * 1.2))
+            scheduler_args = self.configs.optimizer_conf.get('scheduler_args', {}) \
+                if self.configs.optimizer_conf.get('scheduler_args', {}) is not None else {}
+            if self.configs.optimizer_conf.scheduler == 'CosineAnnealingLR':
+                max_step = int(self.configs.train_conf.max_epoch * 1.2) * len(self.train_loader)
+                self.scheduler = CosineAnnealingLR(optimizer=self.optimizer,
+                                                   T_max=max_step,
+                                                   **scheduler_args)
+            elif self.configs.optimizer_conf.scheduler == 'WarmupCosineSchedulerLR':
+                self.scheduler = WarmupCosineSchedulerLR(optimizer=self.optimizer,
+                                                         fix_epoch=self.configs.train_conf.max_epoch,
+                                                         step_per_epoch=len(self.train_loader),
+                                                         **scheduler_args)
+            else:
+                raise Exception(f'不支持学习率衰减函数：{self.configs.optimizer_conf.scheduler}')
 
     def __load_pretrained(self, pretrained_model):
         # 加载预训练模型
@@ -286,7 +279,7 @@ class MAClsTrainer(object):
             # 多卡训练只使用一个进程打印
             if batch_id % self.configs.train_conf.log_interval == 0 and local_rank == 0:
                 # 计算每秒训练数据量
-                train_speed = self.configs.dataset_conf.batch_size / (sum(train_times) / len(train_times) / 1000)
+                train_speed = self.configs.dataset_conf.dataLoader.batch_size / (sum(train_times) / len(train_times) / 1000)
                 # 计算剩余时间
                 eta_sec = (sum(train_times) / len(train_times)) * (
                         sum_batch - (epoch_id - 1) * len(self.train_loader) - batch_id)
@@ -332,7 +325,7 @@ class MAClsTrainer(object):
             local_rank = int(os.environ["LOCAL_RANK"])
 
         # 获取数据
-        self.__setup_dataloader(augment_conf_path=augment_conf_path, is_train=True)
+        self.__setup_dataloader(is_train=True)
         # 获取模型
         self.__setup_model(input_size=self.audio_featurizer.feature_dim, is_train=True)
 
