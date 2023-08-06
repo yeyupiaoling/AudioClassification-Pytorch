@@ -351,7 +351,7 @@ class MAClsTrainer(object):
             # 多卡训练只使用一个进程执行评估和保存模型
             if local_rank == 0:
                 logger.info('=' * 70)
-                loss, acc = self.evaluate(resume_model=None)
+                loss, acc = self.evaluate()
                 logger.info('Test epoch: {}, time/epoch: {}, loss: {:.5f}, accuracy: {:.5f}'.format(
                     epoch_id, str(timedelta(seconds=(time.time() - start_epoch))), loss, acc))
                 logger.info('=' * 70)
@@ -367,7 +367,7 @@ class MAClsTrainer(object):
                 # 保存模型
                 self.__save_checkpoint(save_model_path=save_model_path, epoch_id=epoch_id, best_acc=acc)
 
-    def evaluate(self, resume_model='models/EcapaTdnn_MelSpectrogram/best_model/', save_matrix_path=None):
+    def evaluate(self, resume_model=None, save_matrix_path=None):
         """
         评估模型
         :param resume_model: 所使用的模型
