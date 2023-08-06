@@ -302,14 +302,12 @@ class MAClsTrainer(object):
     def train(self,
               save_model_path='models/',
               resume_model=None,
-              pretrained_model=None,
-              augment_conf_path='configs/augmentation.json'):
+              pretrained_model=None):
         """
         训练模型
         :param save_model_path: 模型保存的路径
         :param resume_model: 恢复训练，当为None则不使用预训练模型
         :param pretrained_model: 预训练模型的路径，当为None则不使用预训练模型
-        :param augment_conf_path: 数据增强的配置文件，为json格式
         """
         # 获取有多少张显卡训练
         nranks = torch.cuda.device_count()
