@@ -23,6 +23,7 @@ from macls.data_utils.collate_fn import collate_fn
 from macls.data_utils.featurizer import AudioFeaturizer
 from macls.data_utils.reader import CustomDataset
 from macls.data_utils.spec_aug import SpecAug
+from macls.metric.metrics import accuracy
 from macls.models.ecapa_tdnn import EcapaTdnn
 from macls.models.panns import PANNS_CNN6, PANNS_CNN10, PANNS_CNN14
 from macls.models.res2net import Res2Net
@@ -84,6 +85,7 @@ class MAClsTrainer(object):
                                                use_dB_normalization=self.configs.dataset_conf.use_dB_normalization,
                                                target_dB=self.configs.dataset_conf.target_dB,
                                                mode='train')
+            # 设置支持多卡训练
             train_sampler = None
             if torch.cuda.device_count() > 1:
                 # 设置支持多卡训练
@@ -132,6 +134,8 @@ class MAClsTrainer(object):
         # 获取损失函数
         self.loss = torch.nn.CrossEntropyLoss()
         if is_train:
+            if self.configs.train_conf.enable_amp:
+                self.amp_scaler = torch.cuda.amp.GradScaler(init_scale=1024)
             # 获取优化方法
             optimizer = self.configs.optimizer_conf.optimizer
             if optimizer == 'Adam':
@@ -267,19 +271,29 @@ class MAClsTrainer(object):
             # 特征增强
             if self.configs.dataset_conf.use_spec_aug:
                 features = self.spec_aug(features)
-            output = self.model(features)
+            # 执行模型计算，是否开启自动混合精度
+            with torch.cuda.amp.autocast(enabled=self.configs.train_conf.enable_amp):
+                output = self.model(features)
             # 计算损失值
             los = self.loss(output, label)
+            # 是否开启自动混合精度
+            if self.configs.train_conf.enable_amp:
+                # loss缩放，乘以系数loss_scaling
+                scaled = self.amp_scaler.scale(los)
+                scaled.backward()
+            else:
+                los.backward()
+            # 是否开启自动混合精度
+            if self.configs.train_conf.enable_amp:
+                self.amp_scaler.unscale_(self.optimizer)
+                self.amp_scaler.step(self.optimizer)
+                self.amp_scaler.update()
+            else:
+                self.optimizer.step()
             self.optimizer.zero_grad()
-            los.backward()
-            self.optimizer.step()
 
             # 计算准确率
-            output = torch.nn.functional.softmax(output, dim=-1)
-            output = output.data.cpu().numpy()
-            output = np.argmax(output, axis=1)
-            label = label.data.cpu().numpy()
-            acc = np.mean((output == label).astype(int))
+            acc = accuracy(output, label)
             accuracies.append(acc)
             loss_sum.append(los)
             train_times.append((time.time() - start) * 1000)
@@ -408,8 +422,6 @@ class MAClsTrainer(object):
                 features, _ = self.audio_featurizer(audio, input_lens_ratio)
                 output = eval_model(features)
                 los = self.loss(output, label)
-                label = label.data.cpu().numpy()
-                output = output.data.cpu().numpy()
                 # 模型预测标签
                 pred = np.argmax(output, axis=1)
                 preds.extend(pred.tolist())
@@ -417,7 +429,7 @@ class MAClsTrainer(object):
                 labels.extend(label.tolist())
 
                 # 计算准确率
-                acc = np.mean((pred == label).astype(int))
+                acc = accuracy(output, label)
                 accuracies.append(acc)
                 losses.append(los.data.cpu().numpy())
         loss = float(sum(losses) / len(losses))
