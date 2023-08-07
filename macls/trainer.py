@@ -297,7 +297,7 @@ class MAClsTrainer(object):
                 train_times = []
                 self.train_step += 1
             start = time.time()
-        self.scheduler.step()
+            self.scheduler.step()
 
     def train(self,
               save_model_path='models/',
