@@ -23,7 +23,7 @@ logger = setup_logger(__name__)
 class MAClsPredictor:
     def __init__(self,
                  configs,
-                 model_path='models/EcapaTdnn_MelSpectrogram/best_model/',
+                 model_path='models/EcapaTdnn_Fbank/best_model/',
                  use_gpu=True):
         """
         声音分类预测工具

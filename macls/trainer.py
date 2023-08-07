@@ -22,6 +22,7 @@ from macls import SUPPORT_MODEL, __version__
 from macls.data_utils.collate_fn import collate_fn
 from macls.data_utils.featurizer import AudioFeaturizer
 from macls.data_utils.reader import CustomDataset
+from macls.data_utils.spec_aug import SpecAug
 from macls.models.ecapa_tdnn import EcapaTdnn
 from macls.models.panns import PANNS_CNN6, PANNS_CNN10, PANNS_CNN14
 from macls.models.res2net import Res2Net
@@ -67,6 +68,10 @@ class MAClsTrainer(object):
         # 获取特征器
         self.audio_featurizer = AudioFeaturizer(feature_method=self.configs.preprocess_conf.feature_method,
                                                 method_args=self.configs.preprocess_conf.get('method_args', {}))
+        self.audio_featurizer.to(self.device)
+        # 特征增强
+        self.spec_aug = SpecAug(**self.configs.dataset_conf.get('spec_aug_args', {}))
+        self.spec_aug.to(self.device)
 
     def __setup_dataloader(self, is_train=False):
         if is_train:
@@ -259,6 +264,9 @@ class MAClsTrainer(object):
                 input_lens_ratio = input_lens_ratio.to(self.device)
                 label = label.to(self.device).long()
             features, _ = self.audio_featurizer(audio, input_lens_ratio)
+            # 特征增强
+            if self.configs.dataset_conf.use_spec_aug:
+                features = self.spec_aug(features)
             output = self.model(features)
             # 计算损失值
             los = self.loss(output, label)
@@ -423,7 +431,7 @@ class MAClsTrainer(object):
         self.model.train()
         return loss, acc
 
-    def export(self, save_model_path='models/', resume_model='models/EcapaTdnn_MelSpectrogram/best_model/'):
+    def export(self, save_model_path='models/', resume_model='models/EcapaTdnn_Fbank/best_model/'):
         """
         导出预测模型
         :param save_model_path: 模型保存的路径
