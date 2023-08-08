@@ -432,15 +432,16 @@ class MAClsTrainer(object):
                 features, _ = self.audio_featurizer(audio, input_lens_ratio)
                 output = eval_model(features)
                 los = self.loss(output, label)
+                # 计算准确率
+                acc = accuracy(output, label)
+                accuracies.append(acc)
                 # 模型预测标签
+                label = label.data.cpu().numpy()
+                output = output.data.cpu().numpy()
                 pred = np.argmax(output, axis=1)
                 preds.extend(pred.tolist())
                 # 真实标签
                 labels.extend(label.tolist())
-
-                # 计算准确率
-                acc = accuracy(output, label)
-                accuracies.append(acc)
                 losses.append(los.data.cpu().numpy())
         loss = float(sum(losses) / len(losses))
         acc = float(sum(accuracies) / len(accuracies))
