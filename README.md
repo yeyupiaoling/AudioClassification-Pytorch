@@ -27,13 +27,13 @@
 
 # 模型测试表
 
-|      模型      | 预处理方法 |     数据集      | 类别数量 |   准确率   |
-|:------------:|:-----:|:------------:|:----:|:-------:|
-|  EcapaTdnn   | Flank | UrbanSound8K |  10  | 0.94318 |
-| PANNS（CNN14） | Flank |              |      |         |
-|     TDNN     | Flank |              |      |         |
-|   Res2Net    | Flank |              |      |         |
-|   ResNetSE   | Flank |              |      |         |
+|      模型      | Params(M) | 预处理方法 |     数据集      | 类别数量 |   准确率   |
+|:------------:|:---------:|:-----:|:------------:|:----:|:-------:|
+|  EcapaTdnn   |    6.1    | Flank | UrbanSound8K |  10  | 0.94318 |
+| PANNS（CNN10） |    5.2    | Flank |              |      |         |
+|     TDNN     |    2.6    | Flank |              |      |         |
+|   Res2Net    |           | Flank |              |      |         |
+|   ResNetSE   |   13.7    | Flank |              |      |         |
 
 ## 安装环境
 
