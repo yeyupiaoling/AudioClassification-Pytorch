@@ -59,6 +59,7 @@ class MAClsTrainer(object):
         assert self.configs.use_model in SUPPORT_MODEL, f'没有该模型：{self.configs.use_model}'
         self.model = None
         self.test_loader = None
+        self.amp_scaler = None
         # 获取分类标签
         with open(self.configs.dataset_conf.label_list_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
@@ -130,6 +131,9 @@ class MAClsTrainer(object):
         self.model.to(self.device)
         self.audio_featurizer.to(self.device)
         summary(self.model, input_size=(1, 98, self.audio_featurizer.feature_dim))
+        # 使用Pytorch2.0的编译器
+        if self.configs.train_conf.use_compile and torch.__version__ >= "2" and platform.system().lower() == 'windows':
+            self.model = torch.compile(self.model, mode="reduce-overhead")
         # print(self.model)
         # 获取损失函数
         self.loss = torch.nn.CrossEntropyLoss()
@@ -213,6 +217,9 @@ class MAClsTrainer(object):
             else:
                 self.model.load_state_dict(state_dict)
             self.optimizer.load_state_dict(torch.load(os.path.join(resume_model, 'optimizer.pth')))
+            # 自动混合精度参数
+            if self.amp_scaler is not None and os.path.exists(os.path.join(resume_model, 'scaler.pth')):
+                self.amp_scaler.load_state_dict(torch.load(os.path.join(resume_model, 'scaler.pth')))
             with open(os.path.join(resume_model, 'model.state'), 'r', encoding='utf-8') as f:
                 json_data = json.load(f)
                 last_epoch = json_data['last_epoch'] - 1
@@ -237,6 +244,9 @@ class MAClsTrainer(object):
         os.makedirs(model_path, exist_ok=True)
         torch.save(self.optimizer.state_dict(), os.path.join(model_path, 'optimizer.pth'))
         torch.save(state_dict, os.path.join(model_path, 'model.pth'))
+        # 自动混合精度参数
+        if self.amp_scaler is not None:
+            torch.save(self.amp_scaler.state_dict(), os.path.join(model_path, 'scaler.pth'))
         with open(os.path.join(model_path, 'model.state'), 'w', encoding='utf-8') as f:
             data = {"last_epoch": epoch_id, "accuracy": best_acc, "version": __version__}
             f.write(json.dumps(data))
