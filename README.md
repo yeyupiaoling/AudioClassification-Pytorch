@@ -29,7 +29,7 @@
 
 |      模型      | 预处理方法 |   数据集   | 类别数量 | 准确率 |
 |:------------:|:-----:|:-------:|:----:|:---:|
-|  EcapaTdnn   | Flank | 0.93182 |      |     |
+|  EcapaTdnn   | Flank | 0.94318 |      |     |
 | PANNS（CNN14） | Flank |         |      |     |
 |     TDNN     | Flank |         |      |     |
 |   Res2Net    | Flank |         |      |     |
@@ -187,55 +187,7 @@ EcapaTdnn                                [1, 10]                   --
 │    │    └─ModuleList: 3-16             --                        (recursive)
 │    │    └─ModuleList: 3-15             --                        (recursive)
 │    │    └─ModuleList: 3-16             --                        (recursive)
-│    │    └─ModuleList: 3-15             --                        (recursive)
-│    │    └─ModuleList: 3-16             --                        (recursive)
-│    │    └─ModuleList: 3-15             --                        (recursive)
-│    │    └─ModuleList: 3-16             --                        (recursive)
-│    └─Conv1dReluBn: 2-5                 [1, 512, 98]              --
-│    │    └─Conv1d: 3-17                 [1, 512, 98]              262,144
-│    │    └─BatchNorm1d: 3-18            [1, 512, 98]              1,024
-│    └─SE_Connect: 2-6                   [1, 512, 98]              --
-│    │    └─Linear: 3-19                 [1, 256]                  131,328
-│    │    └─Linear: 3-20                 [1, 512]                  131,584
-├─Sequential: 1-3                        [1, 512, 98]              --
-│    └─Conv1dReluBn: 2-7                 [1, 512, 98]              --
-│    │    └─Conv1d: 3-21                 [1, 512, 98]              262,144
-│    │    └─BatchNorm1d: 3-22            [1, 512, 98]              1,024
-│    └─Res2Conv1dReluBn: 2-8             [1, 512, 98]              --
-│    │    └─ModuleList: 3-35             --                        (recursive)
-│    │    └─ModuleList: 3-36             --                        (recursive)
-│    │    └─ModuleList: 3-35             --                        (recursive)
-│    │    └─ModuleList: 3-36             --                        (recursive)
-│    │    └─ModuleList: 3-35             --                        (recursive)
-│    │    └─ModuleList: 3-36             --                        (recursive)
-│    │    └─ModuleList: 3-35             --                        (recursive)
-│    │    └─ModuleList: 3-36             --                        (recursive)
-│    │    └─ModuleList: 3-35             --                        (recursive)
-│    │    └─ModuleList: 3-36             --                        (recursive)
-│    │    └─ModuleList: 3-35             --                        (recursive)
-│    │    └─ModuleList: 3-36             --                        (recursive)
-│    │    └─ModuleList: 3-35             --                        (recursive)
-│    │    └─ModuleList: 3-36             --                        (recursive)
-│    └─Conv1dReluBn: 2-9                 [1, 512, 98]              --
-│    │    └─Conv1d: 3-37                 [1, 512, 98]              262,144
-│    │    └─BatchNorm1d: 3-38            [1, 512, 98]              1,024
-│    └─SE_Connect: 2-10                  [1, 512, 98]              --
-│    │    └─Linear: 3-39                 [1, 256]                  131,328
-│    │    └─Linear: 3-40                 [1, 512]                  131,584
-├─Sequential: 1-4                        [1, 512, 98]              --
-│    └─Conv1dReluBn: 2-11                [1, 512, 98]              --
-│    │    └─Conv1d: 3-41                 [1, 512, 98]              262,144
-│    │    └─BatchNorm1d: 3-42            [1, 512, 98]              1,024
-│    └─Res2Conv1dReluBn: 2-12            [1, 512, 98]              --
-│    │    └─ModuleList: 3-55             --                        (recursive)
-│    │    └─ModuleList: 3-56             --                        (recursive)
-│    │    └─ModuleList: 3-55             --                        (recursive)
-│    │    └─ModuleList: 3-56             --                        (recursive)
-│    │    └─ModuleList: 3-55             --                        (recursive)
-│    │    └─ModuleList: 3-56             --                        (recursive)
-│    │    └─ModuleList: 3-55             --                        (recursive)
-│    │    └─ModuleList: 3-56             --                        (recursive)
-│    │    └─ModuleList: 3-55             --                        (recursive)
+···································
 │    │    └─ModuleList: 3-56             --                        (recursive)
 │    │    └─ModuleList: 3-55             --                        (recursive)
 │    │    └─ModuleList: 3-56             --                        (recursive)
