@@ -9,7 +9,9 @@ import yaml
 from macls import SUPPORT_MODEL
 from macls.data_utils.audio import AudioSegment
 from macls.data_utils.featurizer import AudioFeaturizer
+from macls.models.campplus import CAMPPlus
 from macls.models.ecapa_tdnn import EcapaTdnn
+from macls.models.eres2net import ERes2Net
 from macls.models.panns import PANNS_CNN6, PANNS_CNN10, PANNS_CNN14
 from macls.models.res2net import Res2Net
 from macls.models.resnet_se import ResNetSE
@@ -63,6 +65,10 @@ class MAClsPredictor:
             self.predictor = ResNetSE(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
         elif self.configs.use_model == 'TDNN':
             self.predictor = TDNN(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
+        elif self.configs.use_model == 'ERes2Net':
+            self.model = ERes2Net(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
+        elif self.configs.use_model == 'CAMPPlus':
+            self.model = CAMPPlus(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
         else:
             raise Exception(f'{self.configs.use_model} 模型不存在！')
         self.predictor.to(self.device)

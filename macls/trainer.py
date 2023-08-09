@@ -24,7 +24,9 @@ from macls.data_utils.featurizer import AudioFeaturizer
 from macls.data_utils.reader import CustomDataset
 from macls.data_utils.spec_aug import SpecAug
 from macls.metric.metrics import accuracy
+from macls.models.campplus import CAMPPlus
 from macls.models.ecapa_tdnn import EcapaTdnn
+from macls.models.eres2net import ERes2Net
 from macls.models.panns import PANNS_CNN6, PANNS_CNN10, PANNS_CNN14
 from macls.models.res2net import Res2Net
 from macls.models.resnet_se import ResNetSE
@@ -126,6 +128,10 @@ class MAClsTrainer(object):
             self.model = ResNetSE(input_size=input_size, **self.configs.model_conf)
         elif self.configs.use_model == 'TDNN':
             self.model = TDNN(input_size=input_size, **self.configs.model_conf)
+        elif self.configs.use_model == 'ERes2Net':
+            self.model = ERes2Net(input_size=input_size, **self.configs.model_conf)
+        elif self.configs.use_model == 'CAMPPlus':
+            self.model = CAMPPlus(input_size=input_size, **self.configs.model_conf)
         else:
             raise Exception(f'{self.configs.use_model} 模型不存在！')
         self.model.to(self.device)
