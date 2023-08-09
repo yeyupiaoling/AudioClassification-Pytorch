@@ -32,8 +32,8 @@
 |  EcapaTdnn   |    6.1    | Flank | UrbanSound8K |  10  | 0.94318 |
 | PANNS（CNN10） |    5.2    | Flank |              |      |         |
 |     TDNN     |    2.6    | Flank |              |      |         |
-|   Res2Net    |           | Flank |              |      |         |
-|   ResNetSE   |   13.7    | Flank |              |      |         |
+|   Res2Net    |    5.0    | Flank |              |      |         |
+|   ResNetSE   |    7.8    | Flank |              |      |         |
 
 ## 安装环境
 

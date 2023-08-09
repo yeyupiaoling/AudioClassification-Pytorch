@@ -75,7 +75,7 @@ def SE_Res2Block(channels, kernel_size, stride, padding, dilation, scale):
 
 
 class EcapaTdnn(nn.Module):
-    def __init__(self, num_class, input_size=80, channels=512, embd_dim=192, pooling_type="ASP"):
+    def __init__(self, num_class, input_size, channels=512, embd_dim=192, pooling_type="ASP"):
         super().__init__()
         self.layer1 = Conv1dReluBn(input_size, channels, kernel_size=5, padding=2, dilation=1)
         self.layer2 = SE_Res2Block(channels, kernel_size=3, stride=1, padding=2, dilation=2, scale=8)
@@ -83,7 +83,7 @@ class EcapaTdnn(nn.Module):
         self.layer4 = SE_Res2Block(channels, kernel_size=3, stride=1, padding=4, dilation=4, scale=8)
 
         cat_channels = channels * 3
-        self.emb_size = embd_dim
+        self.embd_dim = embd_dim
         self.conv = nn.Conv1d(cat_channels, cat_channels, kernel_size=1)
         if pooling_type == "ASP":
             self.pooling = AttentiveStatsPool(cat_channels, 128)
