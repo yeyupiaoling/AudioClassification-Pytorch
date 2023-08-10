@@ -27,7 +27,7 @@ dataset_conf:
   # 数据加载器参数
   dataLoader:
     # 训练的批量大小
-    batch_size: 64
+    batch_size: 16
     # 读取数据的线程数量
     num_workers: 4
   # 数据增强参数
@@ -77,7 +77,7 @@ optimizer_conf:
 model_conf:
   # 分类大小
   num_class: 10
-  # 所使用的池化层，支持TAP、TSTP
+  # 所使用的池化层，支持ASP、SAP、TSP、TAP、TSTP
   pooling_type: 'TSTP'
 
 train_conf:
