@@ -4,8 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from macls.models.pooling import AttentiveStatsPool, TemporalAveragePooling, TemporalStatsPool
-from macls.models.pooling import SelfAttentivePooling, TemporalStatisticsPooling
+from macls.models.pooling import TemporalAveragePooling, TemporalStatsPool
 
 
 class ReLU(nn.Hardtanh):
