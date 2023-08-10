@@ -77,7 +77,7 @@ optimizer_conf:
 model_conf:
   # 分类大小
   num_class: 10
-  # 所使用的池化层，支持ASP、SAP、TSP、TAP、TSTP
+  # 所使用的池化层，支持TAP、TSTP
   pooling_type: 'TSTP'
 
 train_conf:
