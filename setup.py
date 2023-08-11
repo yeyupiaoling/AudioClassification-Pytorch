@@ -27,8 +27,8 @@ if __name__ == "__main__":
         description='Audio Classification toolkit on Pytorch',
         long_description=readme(),
         long_description_content_type='text/markdown',
-        url='https://github.com/yeyupiaoling/AudioClassification_Pytorch',
-        download_url='https://github.com/yeyupiaoling/AudioClassification_Pytorch.git',
+        url='https://github.com/yeyupiaoling/AudioClassification-Pytorch',
+        download_url='https://github.com/yeyupiaoling/AudioClassification-Pytorch.git',
         keywords=['audio', 'pytorch'],
         classifiers=[
             'Intended Audience :: Developers',
