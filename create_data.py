@@ -91,7 +91,7 @@ def create_UrbanSound8K_list(audio_path, metadata_path, list_path):
 if __name__ == '__main__':
     # get_data_list('dataset/audio', 'dataset')
     # 生成生成方言数据列表
-    # get_language_identification_data_list(audio_path='dataset/language-identification',
+    # get_language_identification_data_list(audio_path='dataset/language',
     #                                       list_path='dataset/')
     # 创建UrbanSound8K数据列表
     create_UrbanSound8K_list(audio_path='dataset/UrbanSound8K/audio',
