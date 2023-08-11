@@ -75,8 +75,8 @@ optimizer_conf:
     warmup_epoch: 5
 
 model_conf:
-  # 分类大小
-  num_class: 10
+  # 分类大小，如果为null，自动通过标签列表获取
+  num_class: null
   # 所使用的池化层，支持ASP、SAP、TSP、TAP、TSTP
   pooling_type: 'TSTP'
 

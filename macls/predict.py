@@ -50,6 +50,13 @@ class MAClsPredictor:
         self._audio_featurizer = AudioFeaturizer(feature_method=self.configs.preprocess_conf.feature_method,
                                                 method_args=self.configs.preprocess_conf.get('method_args', {}))
         self._audio_featurizer.to(self.device)
+        # 获取分类标签
+        with open(self.configs.dataset_conf.label_list_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        self.class_labels = [l.replace('\n', '') for l in lines]
+        # 自动获取列表数量
+        if self.configs.model_conf.num_class is None:
+            self.configs.model_conf.num_class = len(self.class_labels)
         # 获取模型
         if self.configs.use_model == 'EcapaTdnn':
             self.predictor = EcapaTdnn(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
@@ -83,10 +90,6 @@ class MAClsPredictor:
         self.predictor.load_state_dict(model_state_dict)
         print(f"成功加载模型参数：{model_path}")
         self.predictor.eval()
-        # 获取分类标签
-        with open(self.configs.dataset_conf.label_list_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-        self.class_labels = [l.replace('\n', '') for l in lines]
 
     def _load_audio(self, audio_data, sample_rate=16000):
         """加载音频

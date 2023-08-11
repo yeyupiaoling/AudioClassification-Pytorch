@@ -1,6 +1,14 @@
+# 基于Pytorch实现的声音分类系统
+
+![python version](https://img.shields.io/badge/python-3.8+-orange.svg)
+![GitHub forks](https://img.shields.io/github/forks/yeyupiaoling/AudioClassification-Pytorch)
+![GitHub Repo stars](https://img.shields.io/github/stars/yeyupiaoling/AudioClassification-Pytorch)
+![GitHub](https://img.shields.io/github/license/yeyupiaoling/AudioClassification-Pytorch)
+![支持系统](https://img.shields.io/badge/支持系统-Win/Linux/MAC-9cf)
+
 # 前言
 
-本章我们来介绍如何使用Pytorch训练一个区分不同音频的分类模型，例如你有这样一个需求，需要根据不同的鸟叫声识别是什么种类的鸟，这时你就可以使用这个方法来实现你的需求了。
+本项目是基于Pytorch的声音分类项目，旨在实现对各种环境声音、动物叫声和语种的识别。项目提供了多种声音分类模型，如EcapaTdnn、PANNS、ResNetSE、CAMPPlus和ERes2Net，以支持不同的应用场景。此外，项目还提供了常用的Urbansound8K数据集测试报告和一些方言数据集的下载和使用例子。用户可以根据自己的需求选择适合的模型和数据集，以实现更准确的声音分类。项目的应用场景广泛，可以用于室外的环境监测、野生动物保护、语音识别等领域。同时，项目也鼓励用户探索更多的使用场景，以推动声音分类技术的发展和应用。
 
 
 **欢迎大家扫码入QQ群讨论**，或者直接搜索QQ群号`758170167`，问题答案为博主Github的ID`yeyupiaoling`。
@@ -19,11 +27,19 @@
 
 # 项目特性
 
-1. 支持模型：EcapaTdnn、PANNS、TDNN、Res2Net、ResNetSE
-2. 支持池化层：AttentiveStatsPool(ASP)、SelfAttentivePooling(SAP)、TemporalStatisticsPooling(TSP)、TemporalAveragePooling(
-   TAP)
+1. 支持模型：EcapaTdnn、PANNS、TDNN、Res2Net、ResNetSE、CAMPPlus、ERes2Net
+2. 支持池化层：AttentiveStatsPool(ASP)、SelfAttentivePooling(SAP)、TemporalStatisticsPooling(TSP)、TemporalAveragePooling(TAP)
 3. 支持预处理方法：MelSpectrogram、Spectrogram、MFCC、Fbank
 
+**模型论文：**
+
+- EcapaTdnn：[ECAPA-TDNN: Emphasized Channel Attention, Propagation and Aggregation in TDNN Based Speaker Verification](https://arxiv.org/abs/2005.07143v3)
+- PANNS：[PANNs: Large-Scale Pretrained Audio Neural Networks for Audio Pattern Recognition](https://arxiv.org/abs/1912.10211v5)
+- TDNN：[Prediction of speech intelligibility with DNN-based performance measures](https://arxiv.org/abs/2203.09148)
+- Res2Net：[Res2Net: A New Multi-scale Backbone Architecture](https://arxiv.org/abs/1904.01169)
+- ResNetSE：[Squeeze-and-Excitation Networks](https://arxiv.org/abs/1709.01507)
+- CAMPPlus：[CAM++: A Fast and Efficient Network for Speaker Verification Using Context-Aware Masking](https://arxiv.org/abs/2303.00332v3)
+- ERes2Net：[An Enhanced Res2Net with Local and Global Feature Fusion for Speaker Verification](https://arxiv.org/abs/2305.12838v1)
 
 # 模型测试表
 
@@ -62,9 +78,9 @@ python setup.py install
 
 生成数据列表，用于下一步的读取需要，`audio_path`为音频文件路径，用户需要提前把音频数据集存放在`dataset/audio`目录下，每个文件夹存放一个类别的音频数据，每条音频数据长度在3秒以上，如 `dataset/audio/鸟叫声/······`。`audio`是数据列表存放的位置，生成的数据类别的格式为 `音频路径\t音频对应的类别标签`，音频路径和标签用制表符 `\t`分开。读者也可以根据自己存放数据的方式修改以下函数。
 
-Urbansound8K 是目前应用较为广泛的用于自动城市环境声分类研究的公共数据集，包含10个分类：空调声、汽车鸣笛声、儿童玩耍声、狗叫声、钻孔声、引擎空转声、枪声、手提钻、警笛声和街道音乐声。数据集下载地址：[UrbanSound8K.tar.gz](https://aistudio.baidu.com/aistudio/datasetdetail/36625)。以下是针对Urbansound8K生成数据列表的函数。如果读者想使用该数据集，请下载并解压到 `dataset`目录下，把生成数据列表代码改为以下代码。
+以Urbansound8K为例，Urbansound8K是目前应用较为广泛的用于自动城市环境声分类研究的公共数据集，包含10个分类：空调声、汽车鸣笛声、儿童玩耍声、狗叫声、钻孔声、引擎空转声、枪声、手提钻、警笛声和街道音乐声。数据集下载地址：[UrbanSound8K.tar.gz](https://aistudio.baidu.com/aistudio/datasetdetail/36625)。以下是针对Urbansound8K生成数据列表的函数。如果读者想使用该数据集，请下载并解压到 `dataset`目录下，把生成数据列表代码改为以下代码。
 
-执行`create_data.py`即可生成数据列表，里面提供了两种生成列表方式，第一种是自定义的数据，第二种是生成Urbansound8K的数据列表，具体看代码。
+执行`create_data.py`即可生成数据列表，里面提供了生成多种数据集列表方式，具体看代码。
 ```shell
 python create_data.py
 ```
@@ -256,3 +272,10 @@ python infer_record.py --record_seconds=3
 <p>打赏一块钱支持一下作者</p>
 <img src="https://yeyupiaoling.cn/reward.png" alt="打赏作者" width="400">
 </div>
+
+# 参考资料
+
+1. https://github.com/PaddlePaddle/PaddleSpeech
+2. https://github.com/yeyupiaoling/PaddlePaddle-MobileFaceNets
+3. https://github.com/yeyupiaoling/PPASR
+4. https://github.com/alibaba-damo-academy/3D-Speaker
