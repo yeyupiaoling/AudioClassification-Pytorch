@@ -39,7 +39,7 @@ def get_language_identification_data_list(audio_path, list_path):
         for root,  dirs, files in os.walk(train_dir):
             for file in files:
                 if not file.endswith('.wav'): continue
-                label = int(file.split('_')[-1][-2:])
+                label = int(file.split('_')[-1].replace('.wav', '')[-2:])
                 file = os.path.join(root, file)
                 f.write(f'{file}\t{label}\n')
 
@@ -48,7 +48,7 @@ def get_language_identification_data_list(audio_path, list_path):
         for root,  dirs, files in os.walk(test_dir):
             for file in files:
                 if not file.endswith('.wav'): continue
-                label = int(file.split('_')[-1][-2:])
+                label = int(file.split('_')[-1].replace('.wav', '')[-2:])
                 file = os.path.join(root, file)
                 f.write(f'{file}\t{label}\n')
 
