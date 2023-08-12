@@ -8,6 +8,9 @@
 ![GitHub](https://img.shields.io/github/license/yeyupiaoling/AudioClassification-Pytorch)
 ![支持系统](https://img.shields.io/badge/支持系统-Win/Linux/MAC-9cf)
 
+**Disclaimer, this document was obtained through machine translation, please check the original document [here](./README.md).**
+
+
 # Introduction
 
 This project is a sound classification project based on Pytorch, aiming to realize the recognition of various environmental sounds, animal calls and languages. Several sound classification models such as EcapaTdnn, PANNS, ResNetSE, CAMPPlus, and ERes2Net are provided to support different application scenarios. In addition, the project also provides the commonly used Urbansound8K dataset test report and some dialect datasets download and use examples. Users can choose suitable models and datasets according to their needs to achieve more accurate sound classification. The project has a wide range of application scenarios, and can be used in outdoor environmental monitoring, wildlife protection, speech recognition and other fields. At the same time, the project also encourages users to explore more usage scenarios to promote the development and application of sound classification technology.
