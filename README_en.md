@@ -1,6 +1,6 @@
-简体中文 | [English](./README_en.md)
+[简体中文](./README.md) | English
 
-# 基于Pytorch实现的声音分类系统
+# Sound classification system implemented in Pytorch
 
 ![python version](https://img.shields.io/badge/python-3.8+-orange.svg)
 ![GitHub forks](https://img.shields.io/github/forks/yeyupiaoling/AudioClassification-Pytorch)
@@ -8,32 +8,25 @@
 ![GitHub](https://img.shields.io/github/license/yeyupiaoling/AudioClassification-Pytorch)
 ![支持系统](https://img.shields.io/badge/支持系统-Win/Linux/MAC-9cf)
 
-# 前言
+# Introduction
 
-本项目是基于Pytorch的声音分类项目，旨在实现对各种环境声音、动物叫声和语种的识别。项目提供了多种声音分类模型，如EcapaTdnn、PANNS、ResNetSE、CAMPPlus和ERes2Net，以支持不同的应用场景。此外，项目还提供了常用的Urbansound8K数据集测试报告和一些方言数据集的下载和使用例子。用户可以根据自己的需求选择适合的模型和数据集，以实现更准确的声音分类。项目的应用场景广泛，可以用于室外的环境监测、野生动物保护、语音识别等领域。同时，项目也鼓励用户探索更多的使用场景，以推动声音分类技术的发展和应用。
-
-
-**欢迎大家扫码入QQ群讨论**，或者直接搜索QQ群号`758170167`，问题答案为博主Github的ID`yeyupiaoling`。
-
-<div align="center">
-  <img src="docs/images/qq.png"/>
-</div>
+This project is a sound classification project based on Pytorch, aiming to realize the recognition of various environmental sounds, animal calls and languages. Several sound classification models such as EcapaTdnn, PANNS, ResNetSE, CAMPPlus, and ERes2Net are provided to support different application scenarios. In addition, the project also provides the commonly used Urbansound8K dataset test report and some dialect datasets download and use examples. Users can choose suitable models and datasets according to their needs to achieve more accurate sound classification. The project has a wide range of application scenarios, and can be used in outdoor environmental monitoring, wildlife protection, speech recognition and other fields. At the same time, the project also encourages users to explore more usage scenarios to promote the development and application of sound classification technology.
 
 
-# 使用准备
+# Environment
 
  - Anaconda 3
  - Python 3.8
  - Pytorch 1.13.1
  - Windows 10 or Ubuntu 18.04
 
-# 项目特性
+# Project Features
 
-1. 支持模型：EcapaTdnn、PANNS、TDNN、Res2Net、ResNetSE、CAMPPlus、ERes2Net
-2. 支持池化层：AttentiveStatsPool(ASP)、SelfAttentivePooling(SAP)、TemporalStatisticsPooling(TSP)、TemporalAveragePooling(TAP)
-3. 支持预处理方法：MelSpectrogram、Spectrogram、MFCC、Fbank
+1. Supporting models: EcapaTdnn、PANNS、TDNN、Res2Net、ResNetSE、CAMPPlus、ERes2Net
+2. Supporting pooling: AttentiveStatsPool(ASP)、SelfAttentivePooling(SAP)、TemporalStatisticsPooling(TSP)、TemporalAveragePooling(TAP)
+3. Support preprocessing methods: MelSpectrogram、Spectrogram、MFCC、Fbank
 
-**模型论文：**
+**Model Paper：**
 
 - EcapaTdnn：[ECAPA-TDNN: Emphasized Channel Attention, Propagation and Aggregation in TDNN Based Speaker Verification](https://arxiv.org/abs/2005.07143v3)
 - PANNS：[PANNs: Large-Scale Pretrained Audio Neural Networks for Audio Pattern Recognition](https://arxiv.org/abs/1912.10211v5)
@@ -43,51 +36,51 @@
 - CAMPPlus：[CAM++: A Fast and Efficient Network for Speaker Verification Using Context-Aware Masking](https://arxiv.org/abs/2303.00332v3)
 - ERes2Net：[An Enhanced Res2Net with Local and Global Feature Fusion for Speaker Verification](https://arxiv.org/abs/2305.12838v1)
 
-# 模型测试表
+# Model Test
 
-|      模型      | Params(M) | 预处理方法 |     数据集      | 类别数量 |   准确率   |
-|:------------:|:---------:|:-----:|:------------:|:----:|:-------:|
-|   ResNetSE   |    7.8    | Flank | UrbanSound8K |  10  | 0.98863 |
-|   CAMPPlus   |    7.1    | Flank | UrbanSound8K |  10  | 0.97727 |
-|   ERes2Net   |    6.6    | Flank | UrbanSound8K |  10  | 0.96590 |
-| PANNS（CNN10） |    5.2    | Flank | UrbanSound8K |  10  | 0.96590 |
-|   Res2Net    |    5.0    | Flank | UrbanSound8K |  10  | 0.94318 |
-|     TDNN     |    2.6    | Flank | UrbanSound8K |  10  | 0.92045 |
-|  EcapaTdnn   |    6.1    | Flank | UrbanSound8K |  10  | 0.91876 |
+|    Model     | Params(M) | Preprocessing method |   Dataset    | Number Class | Accuracy |
+|:------------:|:---------:|:--------------------:|:------------:|:------------:|:--------:|
+|   ResNetSE   |    7.8    |        Flank         | UrbanSound8K |      10      | 0.98863  |
+|   CAMPPlus   |    7.1    |        Flank         | UrbanSound8K |      10      | 0.97727  |
+|   ERes2Net   |    6.6    |        Flank         | UrbanSound8K |      10      | 0.96590  |
+| PANNS（CNN10） |    5.2    |        Flank         | UrbanSound8K |      10      | 0.96590  |
+|   Res2Net    |    5.0    |        Flank         | UrbanSound8K |      10      | 0.94318  |
+|     TDNN     |    2.6    |        Flank         | UrbanSound8K |      10      | 0.92045  |
+|  EcapaTdnn   |    6.1    |        Flank         | UrbanSound8K |      10      | 0.91876  |
 
-## 安装环境
+## Installation Environment
 
- - 首先安装的是Pytorch的GPU版本，如果已经安装过了，请跳过。
+ - The GPU version of Pytorch will be installed first, please skip it if you already have it installed.
 ```shell
 conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.6 -c pytorch -c nvidia
 ```
 
- - 安装macls库。
+ - Install macls.
  
-使用pip安装，命令如下：
+Install it using pip with the following command:
 ```shell
 python -m pip install macls -U -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-**建议源码安装**，源码安装能保证使用最新代码。
+**Source installation is recommended**, which ensures that the latest code is used.
 ```shell
 git clone https://github.com/yeyupiaoling/AudioClassification_Pytorch.git
 cd AudioClassification_Pytorch/
 python setup.py install
 ```
 
-## 准备数据
+## Preparing Data
 
-生成数据列表，用于下一步的读取需要，`audio_path`为音频文件路径，用户需要提前把音频数据集存放在`dataset/audio`目录下，每个文件夹存放一个类别的音频数据，每条音频数据长度在3秒以上，如 `dataset/audio/鸟叫声/······`。`audio`是数据列表存放的位置，生成的数据类别的格式为 `音频路径\t音频对应的类别标签`，音频路径和标签用制表符 `\t`分开。读者也可以根据自己存放数据的方式修改以下函数。
+The `audio_path` is the audio file path. The user needs to store the audio dataset in the `dataset/audio` directory in advance. Each folder stores a category of audio data, and the length of each audio data is more than 3 seconds. For example, `dataset/audio/ bird song /······`. `audio` is where the data list is stored, and the format of the generated data category is`audio_path\tcategory_label_audio`, and the audio path and label are separated by a TAB character `\t`. You can also modify the following functions depending on how you store your data:
 
-以Urbansound8K为例，Urbansound8K是目前应用较为广泛的用于自动城市环境声分类研究的公共数据集，包含10个分类：空调声、汽车鸣笛声、儿童玩耍声、狗叫声、钻孔声、引擎空转声、枪声、手提钻、警笛声和街道音乐声。数据集下载地址：[UrbanSound8K.tar.gz](https://aistudio.baidu.com/aistudio/datasetdetail/36625)。以下是针对Urbansound8K生成数据列表的函数。如果读者想使用该数据集，请下载并解压到 `dataset`目录下，把生成数据列表代码改为以下代码。
+Taking Urbansound8K as an example, it is a widely used public dataset for automatic urban environmental sound classification research. Urbansound8K contains 10 categories: air condition sound, car whistle sound, children playing sound, dog bark, drilling sound, engine idling sound, gun sound, jackdrill, siren sound, and street music sound. Data set download address: [UrbanSound8K](https://zenodo.org/record/1203745/files/UrbanSound8K.tar.gz). Here is the function to generate a list of data for Urbansound8K. If you want to use this dataset, please download and unzip it into the `dataset` directory and change the code to generate the list of data as follows.
 
-执行`create_data.py`即可生成数据列表，里面提供了生成多种数据集列表方式，具体看代码。
+`create_data.py` can be used to generate a list of data sets. There are many ways to generate a list of data sets.
 ```shell
 python create_data.py
 ```
 
-生成的列表是长这样的，前面是音频的路径，后面是该音频对应的标签，从0开始，路径和标签之间用`\t`隔开。
+The resulting list looks like this, with the path to the audio followed by the tag for that audio, starting at 0, and separated by `\t`.
 ```shell
 dataset/UrbanSound8K/audio/fold2/104817-4-0-2.wav	4
 dataset/UrbanSound8K/audio/fold9/105029-7-2-5.wav	7
@@ -95,9 +88,9 @@ dataset/UrbanSound8K/audio/fold3/107228-5-0-0.wav	5
 dataset/UrbanSound8K/audio/fold4/109711-3-2-4.wav	3
 ```
 
-# 修改预处理方法
+# Change preprocessing methods
 
-配置文件中默认使用的是MelSpectrogram预处理方法，如果要使用其他预处理方法，可以修改配置文件中的安装下面方式修改，具体的值可以根据自己情况修改。如果不清楚如何设置参数，可以直接删除该部分，直接使用默认值。
+By default, the MelSpectrogram preprocessing method is used in the configuration file. If you want to use other preprocessing methods, you can modify the following installation in the configuration file, and the specific value can be modified according to your own situation. If it's not clear how to set the parameters, you can remove that section and just use the default values.
 
 ```yaml
 preprocess_conf:
@@ -116,16 +109,16 @@ preprocess_conf:
 
 ## 训练
 
-接着就可以开始训练模型了，创建 `train.py`。配置文件里面的参数一般不需要修改，但是这几个是需要根据自己实际的数据集进行调整的，首先最重要的就是分类大小`dataset_conf.num_class`，这个每个数据集的分类大小可能不一样，根据自己的实际情况设定。然后是`dataset_conf.batch_size`，如果是显存不够的话，可以减小这个参数。
+Now we can train the model. We will create `train.py`. The parameters in the configuration file generally do not need to be modified, but these few need to be adjusted according to your actual dataset. The first and most important is the class size `dataset_conf.num_class`, which may be different for each dataset. Then there is` dataset_conf.batch_size `, which can be reduced if memory is insufficient.
 
 ```shell
-# 单卡训练
+# Single GPU training
 CUDA_VISIBLE_DEVICES=0 python train.py
-# 多卡训练
+# Multi GPU training
 CUDA_VISIBLE_DEVICES=0,1 torchrun --standalone --nnodes=1 --nproc_per_node=2 train.py
 ```
 
-训练输出日志：
+Train log:
 ```
 [2023-08-07 22:54:22.148973 INFO   ] utils:print_arguments:14 - ----------- 额外配置参数 -----------
 [2023-08-07 22:54:22.148973 INFO   ] utils:print_arguments:16 - configs: configs/ecapa_tdnn.yml
@@ -242,40 +235,34 @@ Estimated Total Size (MB): 35.07
 [2023-08-07 22:54:30.092504 INFO   ] trainer:__train_epoch:296 - Train epoch: [1/30], batch: [0/4], loss: 2.57033, accuracy: 0.06250, learning rate: 0.00001000, speed: 19.02 data/sec, eta: 0:06:43
 ```
 
-# 评估
-每轮训练结束可以执行评估，评估会出来输出准确率，还保存了混合矩阵图片，保存路径`output/images/`，如下。
+# Eval
+
+At the end of each training round, we can perform an evaluation, which will output the accuracy. We also save the mixture matrix image, and save the path `output/images/` as follows.
 ![混合矩阵](docs/images/image1.png)
 
-# 预测
+# Inference
 
-在训练结束之后，我们得到了一个模型参数文件，我们使用这个模型预测音频。
+At the end of the training, we are given a model parameter file, and we use this model to predict the audio.
 
 ```shell
 python infer.py --audio_path=dataset/UrbanSound8K/audio/fold5/156634-5-2-5.wav
 ```
 
-# 其他功能
+# Other Functions
 
- - 为了方便读取录制数据和制作数据集，这里提供了录音程序`record_audio.py`，这个用于录制音频，录制的音频采样率为16000，单通道，16bit。
+ - In order to read the recorded data and make a dataset easily, we provide the recording program `record_audio.py`, which is used to record audio with a sample rate of 16,000, single channel, 16bit.
 
 ```shell
 python record_audio.py
 ```
 
- - `infer_record.py`这个程序是用来不断进行录音识别，我们可以大致理解为这个程序在实时录音识别。通过这个应该我们可以做一些比较有趣的事情，比如把麦克风放在小鸟经常来的地方，通过实时录音识别，一旦识别到有鸟叫的声音，如果你的数据集足够强大，有每种鸟叫的声音数据集，这样你还能准确识别是那种鸟叫。如果识别到目标鸟类，就启动程序，例如拍照等等。
+ - `infer_record.py`This program is used to continuously perform recording recognition, and we can roughly understand this program as recording recognition in real time. And this should allow us to do some interesting things, like put a microphone in a place where birds often come, and recognize it by recording it in real time, and once you recognize that there's a bird calling, if your dataset is powerful enough, and you have a dataset of every bird calling, then you can identify exactly which bird is calling. If the target bird is identified, the procedure is initiated, such as taking photos, etc.
 
 ```shell
 python infer_record.py --record_seconds=3
 ```
 
-## 打赏作者
-<br/>
-<div align="center">
-<p>打赏一块钱支持一下作者</p>
-<img src="https://yeyupiaoling.cn/reward.png" alt="打赏作者" width="400">
-</div>
-
-# 参考资料
+# Reference
 
 1. https://github.com/PaddlePaddle/PaddleSpeech
 2. https://github.com/yeyupiaoling/PaddlePaddle-MobileFaceNets
