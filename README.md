@@ -12,12 +12,13 @@
 
 本项目是基于Pytorch的声音分类项目，旨在实现对各种环境声音、动物叫声和语种的识别。项目提供了多种声音分类模型，如EcapaTdnn、PANNS、ResNetSE、CAMPPlus和ERes2Net，以支持不同的应用场景。此外，项目还提供了常用的Urbansound8K数据集测试报告和一些方言数据集的下载和使用例子。用户可以根据自己的需求选择适合的模型和数据集，以实现更准确的声音分类。项目的应用场景广泛，可以用于室外的环境监测、野生动物保护、语音识别等领域。同时，项目也鼓励用户探索更多的使用场景，以推动声音分类技术的发展和应用。
 
-
-**欢迎大家扫码入QQ群讨论**，或者直接搜索QQ群号`758170167`，问题答案为博主Github的ID`yeyupiaoling`。
+**欢迎大家扫码入知识星球或者QQ群讨论，知识星球里面提供项目的模型文件和博主其他相关项目的模型文件，也包括其他一些资源。**
 
 <div align="center">
-  <img src="docs/images/qq.png"/>
+  <img src="https://yeyupiaoling.cn/zsxq.png" alt="知识星球" width="400">
+  <img src="https://yeyupiaoling.cn/qq.png" alt="QQ群" width="400">
 </div>
+
 
 
 # 使用准备
@@ -71,8 +72,8 @@ python -m pip install macls -U -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 **建议源码安装**，源码安装能保证使用最新代码。
 ```shell
-git clone https://github.com/yeyupiaoling/AudioClassification_Pytorch.git
-cd AudioClassification_Pytorch/
+git clone https://github.com/yeyupiaoling/AudioClassification-Pytorch.git
+cd AudioClassification-Pytorch/
 python setup.py install
 ```
 
