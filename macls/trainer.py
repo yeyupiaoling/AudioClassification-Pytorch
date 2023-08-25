@@ -238,6 +238,8 @@ class MAClsTrainer(object):
                 last_epoch = json_data['last_epoch'] - 1
                 best_acc = json_data['accuracy']
             logger.info('成功恢复模型参数和优化方法参数：{}'.format(resume_model))
+            self.optimizer.step()
+            self.scheduler.step(last_epoch)
         return last_epoch, best_acc
 
     # 保存模型
