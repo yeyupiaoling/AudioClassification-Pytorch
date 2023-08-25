@@ -339,7 +339,7 @@ class MAClsTrainer(object):
                 writer.add_scalar('Train/Accuracy', (sum(accuracies) / len(accuracies)), self.train_step)
                 # 记录学习率
                 writer.add_scalar('Train/lr', self.scheduler.get_last_lr()[0], self.train_step)
-                train_times = []
+                train_times, accuracies, loss_sum = [], [], []
                 self.train_step += 1
             start = time.time()
             self.scheduler.step()
