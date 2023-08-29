@@ -238,6 +238,8 @@ class MAClsTrainer(object):
                 last_epoch = json_data['last_epoch'] - 1
                 best_acc = json_data['accuracy']
             logger.info('成功恢复模型参数和优化方法参数：{}'.format(resume_model))
+            self.optimizer.step()
+            [self.scheduler.step() for _ in range(last_epoch * len(self.train_loader))]
         return last_epoch, best_acc
 
     # 保存模型
@@ -318,7 +320,7 @@ class MAClsTrainer(object):
             # 计算准确率
             acc = accuracy(output, label)
             accuracies.append(acc)
-            loss_sum.append(los)
+            loss_sum.append(los.data.cpu().numpy())
             train_times.append((time.time() - start) * 1000)
 
             # 多卡训练只使用一个进程打印
@@ -339,7 +341,7 @@ class MAClsTrainer(object):
                 writer.add_scalar('Train/Accuracy', (sum(accuracies) / len(accuracies)), self.train_step)
                 # 记录学习率
                 writer.add_scalar('Train/lr', self.scheduler.get_last_lr()[0], self.train_step)
-                train_times = []
+                train_times, accuracies, loss_sum = [], [], []
                 self.train_step += 1
             start = time.time()
             self.scheduler.step()
