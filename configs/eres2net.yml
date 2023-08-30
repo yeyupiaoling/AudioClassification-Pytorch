@@ -79,6 +79,7 @@ model_conf:
   num_class: null
   # 所使用的池化层，支持ASP、SAP、TSP、TAP、TSTP
   pooling_type: 'TSTP'
+  embd_dim: 192
 
 train_conf:
   # 是否开启自动混合精度

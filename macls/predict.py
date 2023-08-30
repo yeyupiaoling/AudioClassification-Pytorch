@@ -73,9 +73,9 @@ class MAClsPredictor:
         elif self.configs.use_model == 'TDNN':
             self.predictor = TDNN(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
         elif self.configs.use_model == 'ERes2Net':
-            self.model = ERes2Net(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
+            self.predictor = ERes2Net(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
         elif self.configs.use_model == 'CAMPPlus':
-            self.model = CAMPPlus(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
+            self.predictor = CAMPPlus(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
         else:
             raise Exception(f'{self.configs.use_model} 模型不存在！')
         self.predictor.to(self.device)

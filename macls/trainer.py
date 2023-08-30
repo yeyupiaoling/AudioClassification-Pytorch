@@ -113,6 +113,7 @@ class MAClsTrainer(object):
                                           mode='eval')
         self.test_loader = DataLoader(dataset=self.test_dataset,
                                       collate_fn=collate_fn,
+                                      shuffle=True,
                                       batch_size=self.configs.dataset_conf.eval_conf.batch_size,
                                       num_workers=self.configs.dataset_conf.dataLoader.num_workers)
 
@@ -325,6 +326,7 @@ class MAClsTrainer(object):
 
             # 多卡训练只使用一个进程打印
             if batch_id % self.configs.train_conf.log_interval == 0 and local_rank == 0:
+                batch_id = batch_id + 1
                 # 计算每秒训练数据量
                 train_speed = self.configs.dataset_conf.dataLoader.batch_size / (sum(train_times) / len(train_times) / 1000)
                 # 计算剩余时间

@@ -354,6 +354,5 @@ class CAMPPlus(nn.Module):
         x = x.permute(0, 2, 1)  # (B,T,F) => (B,F,T)
         x = self.head(x)
         x = self.xvector(x)
-
-        out = self.fc(x)
+        x = self.fc(x)
         return x
