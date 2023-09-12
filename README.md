@@ -76,7 +76,7 @@ python -m pip install macls -U -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```shell
 git clone https://github.com/yeyupiaoling/AudioClassification-Pytorch.git
 cd AudioClassification-Pytorch/
-python setup.py install
+pip install .
 ```
 
 ## 准备数据

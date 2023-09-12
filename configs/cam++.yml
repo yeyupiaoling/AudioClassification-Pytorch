@@ -23,7 +23,7 @@ dataset_conf:
     # 评估的批量大小
     batch_size: 64
     # 最长的音频长度
-    max_duration: 20
+    max_duration: 10
   # 数据加载器参数
   dataLoader:
     # 训练的批量大小
@@ -83,6 +83,8 @@ train_conf:
   enable_amp: False
   # 是否使用Pytorch2.0的编译器
   use_compile: False
+  # CrossEntropyLoss类的weight参数
+  loss_weight: null
   # 训练的轮数
   max_epoch: 60
   log_interval: 10

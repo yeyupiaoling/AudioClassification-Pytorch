@@ -150,7 +150,9 @@ class MAClsTrainer(object):
             self.model = torch.compile(self.model, mode="reduce-overhead")
         # print(self.model)
         # 获取损失函数
-        self.loss = torch.nn.CrossEntropyLoss()
+        weight = torch.tensor(self.configs.train_conf.loss_weight, dtype=torch.float, device=self.device)\
+            if self.configs.train_conf.loss_weight is not None else None
+        self.loss = torch.nn.CrossEntropyLoss(weight=weight)
         if is_train:
             if self.configs.train_conf.enable_amp:
                 self.amp_scaler = torch.cuda.amp.GradScaler(init_scale=1024)
