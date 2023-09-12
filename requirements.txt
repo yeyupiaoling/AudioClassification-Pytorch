@@ -3,7 +3,7 @@ scipy>=1.6.3
 librosa>=0.9.1
 soundfile>=0.12.1
 soundcard>=0.4.2
-resampy==0.2.2
+resampy>=0.2.2
 numba>=0.53.0
 pydub~=0.25.1
 matplotlib>=3.5.2
