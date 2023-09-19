@@ -188,6 +188,8 @@ class MAClsTrainer(object):
                                                          **scheduler_args)
             else:
                 raise Exception(f'不支持学习率衰减函数：{self.configs.optimizer_conf.scheduler}')
+        if self.configs.train_conf.use_compile and torch.__version__ >= "2" and platform.system().lower() != 'windows':
+            self.model = torch.compile(self.model, mode="reduce-overhead")
 
     def __load_pretrained(self, pretrained_model):
         # 加载预训练模型
