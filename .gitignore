@@ -7,4 +7,6 @@ dataset/
 log/
 output/
 models/
-test.py
+pretrained_models/
+temp/
+test*.py

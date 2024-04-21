@@ -412,6 +412,7 @@ class MAClsTrainer(object):
             self.__train_epoch(epoch_id=epoch_id, local_rank=local_rank, writer=writer, nranks=nranks)
             # 多卡训练只使用一个进程执行评估和保存模型
             if local_rank == 0:
+                if self.stop_eval: continue
                 logger.info('=' * 70)
                 self.eval_loss, self.eval_acc = self.evaluate()
                 logger.info('Test epoch: {}, time/epoch: {}, loss: {:.5f}, accuracy: {:.5f}'.format(
