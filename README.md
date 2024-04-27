@@ -246,8 +246,48 @@ Estimated Total Size (MB): 35.07
 ```
 
 # 评估
-每轮训练结束可以执行评估，评估会出来输出准确率，还保存了混合矩阵图片，保存路径`output/images/`，如下。
-![混合矩阵](docs/images/image1.png)
+
+执行下面命令执行评估。
+
+```shell
+python eval.py --configs=configs/bi_lstm.yml
+```
+
+评估输出如下：
+```shell
+[2024-02-03 15:13:25.469242 INFO   ] trainer:evaluate:461 - 成功加载模型：models/CAMPPlus_Fbank/best_model/model.pth
+100%|██████████████████████████████| 150/150 [00:00<00:00, 1281.96it/s]
+评估消耗时间：1s，loss：0.61840，accuracy：0.87333
+```
+
+评估会出来输出准确率，还保存了混淆矩阵图片，保存路径`output/images/`，如下。
+
+<br/>
+<div align="center">
+<img src="docs/images/image1.png" alt="混淆矩阵" width="600">
+</div>
+
+
+注意：如果类别标签是中文的，需要设置安装字体才能正常显示，一般情况下Windows无需安装，Ubuntu需要安装。如果Windows确实是确实字体，只需要[字体文件](https://github.com/tracyone/program_font)这里下载`.ttf`格式的文件，复制到`C:\Windows\Fonts`即可。Ubuntu系统操作如下。
+
+1. 安装字体
+```shell
+git clone https://github.com/tracyone/program_font && cd program_font && ./install.sh
+```
+
+2. 执行下面Python代码
+```python
+import matplotlib
+import shutil
+import os
+
+path = matplotlib.matplotlib_fname()
+path = path.replace('matplotlibrc', 'fonts/ttf/')
+print(path)
+shutil.copy('/usr/share/fonts/MyFonts/simhei.ttf', path)
+user_dir = os.path.expanduser('~')
+shutil.rmtree(f'{user_dir}/.cache/matplotlib', ignore_errors=True)
+```
 
 # 预测
 
