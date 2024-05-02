@@ -1,4 +1,3 @@
-import io
 import json
 import os
 import platform
@@ -11,9 +10,9 @@ import torch
 import torch.distributed as dist
 import yaml
 from sklearn.metrics import confusion_matrix
-from torch.utils.data.distributed import DistributedSampler
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 from torchinfo import summary
 from tqdm import tqdm
 from visualdl import LogWriter
@@ -21,7 +20,7 @@ from visualdl import LogWriter
 from macls import SUPPORT_MODEL, __version__
 from macls.data_utils.collate_fn import collate_fn
 from macls.data_utils.featurizer import AudioFeaturizer
-from macls.data_utils.reader import CustomDataset
+from macls.data_utils.reader import MAClsDataset
 from macls.data_utils.spec_aug import SpecAug
 from macls.metric.metrics import accuracy
 from macls.models.campplus import CAMPPlus
@@ -60,6 +59,10 @@ class MAClsTrainer(object):
         self.configs = dict_to_object(configs)
         assert self.configs.use_model in SUPPORT_MODEL, f'没有该模型：{self.configs.use_model}'
         self.model = None
+        self.audio_featurizer = None
+        self.train_dataset = None
+        self.train_loader = None
+        self.test_dataset = None
         self.test_loader = None
         self.amp_scaler = None
         # 获取分类标签
@@ -69,10 +72,6 @@ class MAClsTrainer(object):
         if platform.system().lower() == 'windows':
             self.configs.dataset_conf.dataLoader.num_workers = 0
             logger.warning('Windows系统不支持多线程读取数据，已自动关闭！')
-        # 获取特征器
-        self.audio_featurizer = AudioFeaturizer(feature_method=self.configs.preprocess_conf.feature_method,
-                                                method_args=self.configs.preprocess_conf.get('method_args', {}))
-        self.audio_featurizer.to(self.device)
         # 特征增强
         self.spec_aug = SpecAug(**self.configs.dataset_conf.get('spec_aug_args', {}))
         self.spec_aug.to(self.device)
@@ -84,16 +83,20 @@ class MAClsTrainer(object):
         self.stop_train, self.stop_eval = False, False
 
     def __setup_dataloader(self, is_train=False):
+        # 获取特征器
+        self.audio_featurizer = AudioFeaturizer(feature_method=self.configs.preprocess_conf.feature_method,
+                                                method_args=self.configs.preprocess_conf.get('method_args', {}))
         if is_train:
-            self.train_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.train_list,
-                                               do_vad=self.configs.dataset_conf.do_vad,
-                                               max_duration=self.configs.dataset_conf.max_duration,
-                                               min_duration=self.configs.dataset_conf.min_duration,
-                                               aug_conf=self.configs.dataset_conf.aug_conf,
-                                               sample_rate=self.configs.dataset_conf.sample_rate,
-                                               use_dB_normalization=self.configs.dataset_conf.use_dB_normalization,
-                                               target_dB=self.configs.dataset_conf.target_dB,
-                                               mode='train')
+            self.train_dataset = MAClsDataset(data_list_path=self.configs.dataset_conf.train_list,
+                                              audio_featurizer=self.audio_featurizer,
+                                              do_vad=self.configs.dataset_conf.do_vad,
+                                              max_duration=self.configs.dataset_conf.max_duration,
+                                              min_duration=self.configs.dataset_conf.min_duration,
+                                              aug_conf=self.configs.dataset_conf.aug_conf,
+                                              sample_rate=self.configs.dataset_conf.sample_rate,
+                                              use_dB_normalization=self.configs.dataset_conf.use_dB_normalization,
+                                              target_dB=self.configs.dataset_conf.target_dB,
+                                              mode='train')
             # 设置支持多卡训练
             train_sampler = None
             if torch.cuda.device_count() > 1:
@@ -105,19 +108,45 @@ class MAClsTrainer(object):
                                            sampler=train_sampler,
                                            **self.configs.dataset_conf.dataLoader)
         # 获取测试数据
-        self.test_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.test_list,
-                                          do_vad=self.configs.dataset_conf.do_vad,
-                                          max_duration=self.configs.dataset_conf.eval_conf.max_duration,
-                                          min_duration=self.configs.dataset_conf.min_duration,
-                                          sample_rate=self.configs.dataset_conf.sample_rate,
-                                          use_dB_normalization=self.configs.dataset_conf.use_dB_normalization,
-                                          target_dB=self.configs.dataset_conf.target_dB,
-                                          mode='eval')
+        self.test_dataset = MAClsDataset(data_list_path=self.configs.dataset_conf.test_list,
+                                         audio_featurizer=self.audio_featurizer,
+                                         do_vad=self.configs.dataset_conf.do_vad,
+                                         max_duration=self.configs.dataset_conf.eval_conf.max_duration,
+                                         min_duration=self.configs.dataset_conf.min_duration,
+                                         sample_rate=self.configs.dataset_conf.sample_rate,
+                                         use_dB_normalization=self.configs.dataset_conf.use_dB_normalization,
+                                         target_dB=self.configs.dataset_conf.target_dB,
+                                         mode='eval')
         self.test_loader = DataLoader(dataset=self.test_dataset,
                                       collate_fn=collate_fn,
                                       shuffle=True,
                                       batch_size=self.configs.dataset_conf.eval_conf.batch_size,
                                       num_workers=self.configs.dataset_conf.dataLoader.num_workers)
+
+    # 提取特征保存文件
+    def extract_features(self, save_dir='dataset/features'):
+        self.audio_featurizer = AudioFeaturizer(feature_method=self.configs.preprocess_conf.feature_method,
+                                                method_args=self.configs.preprocess_conf.get('method_args', {}))
+        for i, data_list in enumerate([self.configs.dataset_conf.train_list, self.configs.dataset_conf.test_list]):
+            # 获取测试数据
+            test_dataset = MAClsDataset(data_list_path=data_list,
+                                        audio_featurizer=self.audio_featurizer,
+                                        do_vad=self.configs.dataset_conf.do_vad,
+                                        sample_rate=self.configs.dataset_conf.sample_rate,
+                                        use_dB_normalization=self.configs.dataset_conf.use_dB_normalization,
+                                        target_dB=self.configs.dataset_conf.target_dB,
+                                        mode='extract_feature')
+            save_data_list = data_list.replace('.txt', '_features.txt')
+            with open(save_data_list, 'w', encoding='utf-8') as f:
+                for i in tqdm(range(len(test_dataset))):
+                    feature, label = test_dataset[i]
+                    feature = feature.numpy()
+                    label = int(label)
+                    save_path = os.path.join(save_dir, str(label), f'{int(time.time() * 1000)}.npy').replace('\\', '/')
+                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                    np.save(save_path, feature)
+                    f.write(f'{save_path}\t{label}\n')
+            logger.info(f'{data_list}列表中的数据已提取特征完成，新列表为：{save_data_list}')
 
     def __setup_model(self, input_size, is_train=False):
         # 自动获取列表数量
@@ -145,8 +174,7 @@ class MAClsTrainer(object):
         else:
             raise Exception(f'{self.configs.use_model} 模型不存在！')
         self.model.to(self.device)
-        self.audio_featurizer.to(self.device)
-        summary(self.model, input_size=(1, 98, self.audio_featurizer.feature_dim))
+        summary(self.model, input_size=(1, 98, input_size))
         # 使用Pytorch2.0的编译器
         if self.configs.train_conf.use_compile and torch.__version__ >= "2" and platform.system().lower() == 'windows':
             self.model = torch.compile(self.model, mode="reduce-overhead")
@@ -289,17 +317,14 @@ class MAClsTrainer(object):
     def __train_epoch(self, epoch_id, local_rank, writer, nranks=0):
         train_times, accuracies, loss_sum = [], [], []
         start = time.time()
-        for batch_id, (audio, label, input_lens_ratio) in enumerate(self.train_loader):
+        for batch_id, (features, label, input_len) in enumerate(self.train_loader):
             if self.stop_train: break
             if nranks > 1:
-                audio = audio.to(local_rank)
-                input_lens_ratio = input_lens_ratio.to(local_rank)
+                features = features.to(local_rank)
                 label = label.to(local_rank).long()
             else:
-                audio = audio.to(self.device)
-                input_lens_ratio = input_lens_ratio.to(self.device)
+                features = features.to(self.device)
                 label = label.to(self.device).long()
-            features, _ = self.audio_featurizer(audio, input_lens_ratio)
             # 特征增强
             if self.configs.dataset_conf.use_spec_aug:
                 features = self.spec_aug(features)
@@ -386,7 +411,6 @@ class MAClsTrainer(object):
         # 支持多卡训练
         if nranks > 1 and self.use_gpu:
             self.model.to(local_rank)
-            self.audio_featurizer.to(local_rank)
             self.model = torch.nn.parallel.DistributedDataParallel(self.model, device_ids=[local_rank])
         logger.info('训练数据：{}'.format(len(self.train_dataset)))
 
@@ -456,12 +480,10 @@ class MAClsTrainer(object):
 
         accuracies, losses, preds, labels = [], [], [], []
         with torch.no_grad():
-            for batch_id, (audio, label, input_lens_ratio) in enumerate(tqdm(self.test_loader)):
+            for batch_id, (features, label, input_lens) in enumerate(tqdm(self.test_loader)):
                 if self.stop_eval: break
-                audio = audio.to(self.device)
-                input_lens_ratio = input_lens_ratio.to(self.device)
+                features = features.to(self.device)
                 label = label.to(self.device).long()
-                features, _ = self.audio_featurizer(audio, input_lens_ratio)
                 output = eval_model(features)
                 los = self.loss(output, label)
                 # 计算准确率

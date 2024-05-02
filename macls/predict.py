@@ -48,8 +48,7 @@ class MAClsPredictor:
         assert self.configs.use_model in SUPPORT_MODEL, f'没有该模型：{self.configs.use_model}'
         # 获取特征器
         self._audio_featurizer = AudioFeaturizer(feature_method=self.configs.preprocess_conf.feature_method,
-                                                method_args=self.configs.preprocess_conf.get('method_args', {}))
-        self._audio_featurizer.to(self.device)
+                                                 method_args=self.configs.preprocess_conf.get('method_args', {}))
         # 获取分类标签
         with open(self.configs.dataset_conf.label_list_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
@@ -130,9 +129,8 @@ class MAClsPredictor:
         """
         # 加载音频文件，并进行预处理
         input_data = self._load_audio(audio_data=audio_data, sample_rate=sample_rate)
-        input_data = torch.tensor(input_data.samples, dtype=torch.float32, device=self.device).unsqueeze(0)
-        input_len_ratio = torch.tensor([1], dtype=torch.float32, device=self.device)
-        audio_feature, _ = self._audio_featurizer(input_data, input_len_ratio)
+        input_data = torch.tensor(input_data.samples, dtype=torch.float32).unsqueeze(0)
+        audio_feature = self._audio_featurizer(input_data).to(self.device)
         # 执行预测
         output = self.predictor(audio_feature)
         result = torch.nn.functional.softmax(output, dim=-1)[0]
@@ -159,7 +157,7 @@ class MAClsPredictor:
         max_audio_length = batch[0].shape[0]
         batch_size = len(batch)
         # 以最大的长度创建0张量
-        inputs = np.zeros((batch_size, max_audio_length), dtype='float32')
+        inputs = np.zeros((batch_size, max_audio_length), dtype=np.float32)
         input_lens_ratio = []
         for x in range(batch_size):
             tensor = audios_data1[x]
@@ -167,9 +165,9 @@ class MAClsPredictor:
             # 将数据插入都0张量中，实现了padding
             inputs[x, :seq_length] = tensor[:]
             input_lens_ratio.append(seq_length / max_audio_length)
-        input_lens_ratio = torch.tensor(input_lens_ratio, dtype=torch.float32, device=self.device)
-        inputs = torch.tensor(inputs, dtype=torch.float32, device=self.device)
-        audio_feature, _ = self._audio_featurizer(inputs, input_lens_ratio)
+        inputs = torch.tensor(inputs, dtype=torch.float32)
+        input_lens_ratio = torch.tensor(input_lens_ratio, dtype=torch.float32)
+        audio_feature = self._audio_featurizer(inputs, input_lens_ratio).to(self.device)
         # 执行预测
         output = self.predictor(audio_feature)
         results = torch.nn.functional.softmax(output, dim=-1)

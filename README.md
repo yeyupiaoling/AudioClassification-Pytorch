@@ -98,7 +98,7 @@ dataset/UrbanSound8K/audio/fold3/107228-5-0-0.wav	5
 dataset/UrbanSound8K/audio/fold4/109711-3-2-4.wav	3
 ```
 
-# 修改预处理方法
+# 修改预处理方法（可选）
 
 配置文件中默认使用的是MelSpectrogram预处理方法，如果要使用其他预处理方法，可以修改配置文件中的安装下面方式修改，具体的值可以根据自己情况修改。如果不清楚如何设置参数，可以直接删除该部分，直接使用默认值。
 
@@ -116,6 +116,19 @@ preprocess_conf:
     f_max: 14000.0
     n_mels: 64
 ```
+
+# 提取特征（可选）
+
+在训练过程中，首先是要读取音频数据，然后提取特征，最后再进行训练。其中读取音频数据、提取特征也是比较消耗时间的，所以我们可以选择提前提取好取特征，训练模型的是就可以直接加载提取好的特征，这样训练速度会更快。这个提取特征是可选择，如果没有提取好的特征，训练模型的时候就会从读取音频数据，然后提取特征开始。提取特征步骤如下：
+
+1. 执行`extract_features.py`，提取特征，特征会保存在`dataset/features`目录下，并生成新的数据列表`train_list_features.txt`和`test_list_features.txt`。
+
+```shell
+python extract_features.py --configs=configs/cam++.yml --save_dir=dataset/features
+```
+
+2. 修改配置文件，将`dataset_conf.train_list`和`dataset_conf.test_list`修改为`train_list_features.txt`和`test_list_features.txt`。
+
 
 ## 训练
 
