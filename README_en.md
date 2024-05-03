@@ -46,7 +46,7 @@ This project is a sound classification project based on Pytorch, aiming to reali
 |   ResNetSE   |    7.8    |        Flank         |     UrbanSound8K      |      10      | 0.98863  |
 |   CAMPPlus   |    7.1    |        Flank         |     UrbanSound8K      |      10      | 0.97727  |
 |   ERes2Net   |    6.6    |        Flank         |     UrbanSound8K      |      10      | 0.96590  |
-|  ERes2NetV2  |    6.1    |        Flank         |     UrbanSound8K      |      10      | 0.96364  |
+|  ERes2NetV2  |    5.4    |        Flank         |     UrbanSound8K      |      10      | 0.96364  |
 | PANNS（CNN10） |    5.2    |        Flank         |     UrbanSound8K      |      10      | 0.96590  |
 |   Res2Net    |    5.0    |        Flank         |     UrbanSound8K      |      10      | 0.94318  |
 |     TDNN     |    2.6    |        Flank         |     UrbanSound8K      |      10      | 0.92045  |

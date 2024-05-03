@@ -401,7 +401,7 @@ class ERes2NetV2(nn.Module):
                  num_blocks=[3, 4, 6, 3],
                  m_channels=32,
                  expansion=2,
-                 base_width=32,
+                 base_width=26,
                  scale=2,
                  embd_dim=192,
                  pooling_type='TSTP',
