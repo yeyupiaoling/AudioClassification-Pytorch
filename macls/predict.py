@@ -11,7 +11,7 @@ from macls.data_utils.audio import AudioSegment
 from macls.data_utils.featurizer import AudioFeaturizer
 from macls.models.campplus import CAMPPlus
 from macls.models.ecapa_tdnn import EcapaTdnn
-from macls.models.eres2net import ERes2Net
+from macls.models.eres2net import ERes2NetV2, ERes2Net
 from macls.models.panns import PANNS_CNN6, PANNS_CNN10, PANNS_CNN14
 from macls.models.res2net import Res2Net
 from macls.models.resnet_se import ResNetSE
@@ -73,6 +73,8 @@ class MAClsPredictor:
             self.predictor = TDNN(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
         elif self.configs.use_model == 'ERes2Net':
             self.predictor = ERes2Net(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
+        elif self.configs.use_model == 'ERes2NetV2':
+            self.predictor = ERes2NetV2(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
         elif self.configs.use_model == 'CAMPPlus':
             self.predictor = CAMPPlus(input_size=self._audio_featurizer.feature_dim, **self.configs.model_conf)
         else:
