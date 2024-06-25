@@ -238,8 +238,8 @@ class MAClsTrainer(object):
             for name, weight in model_dict.items():
                 if name in model_state_dict.keys():
                     if list(weight.shape) != list(model_state_dict[name].shape):
-                        logger.warning('{} not used, shape {} unmatched with {} in model.'.
-                                       format(name, list(model_state_dict[name].shape), list(weight.shape)))
+                        logger.warning(f'{name} not used, shape {list(model_state_dict[name].shape)} '
+                                       f'unmatched with {list(weight.shape)} in model.')
                         model_state_dict.pop(name, None)
                 else:
                     logger.warning('Lack weight: {}'.format(name))

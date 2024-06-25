@@ -259,6 +259,22 @@ Estimated Total Size (MB): 35.07
 [2023-08-07 22:54:30.092504 INFO   ] trainer:__train_epoch:296 - Train epoch: [1/30], batch: [0/4], loss: 2.57033, accuracy: 0.06250, learning rate: 0.00001000, speed: 19.02 data/sec, eta: 0:06:43
 ```
 
+**训练可视化：**
+
+项目的根目录执行下面命令，并网页访问`http://localhost:8040/`，如果是服务器，需要修改`localhost`为服务器的IP地址。
+```shell
+visualdl --logdir=log --host=0.0.0.0
+```
+
+打开的网页如下：
+
+<br/>
+<div align="center">
+<img src="docs/images/log.jpg" alt="混淆矩阵" width="600">
+</div>
+
+
+
 # 评估
 
 执行下面命令执行评估。
