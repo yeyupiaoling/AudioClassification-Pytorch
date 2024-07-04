@@ -112,7 +112,8 @@ preprocess_conf:
   # 当use_hf_model为False时，支持：MelSpectrogram、Spectrogram、MFCC、Fbank
   # 当use_hf_model为True时，指定的是HuggingFace的模型或者本地路径，比如facebook/w2v-bert-2.0或者./feature_models/w2v-bert-2.0
   feature_method: 'Fbank'
-  # 设置API参数，更参数查看对应API，不清楚的可以直接删除该部分，直接使用默认值，当use_hf_model为False时，该参数才有效
+  # 当use_hf_model为False时，设置API参数，更参数查看对应API，不清楚的可以直接删除该部分，直接使用默认值。
+  # 当use_hf_model为True时，可以设置参数use_gpu，指定是否使用GPU提取特征
   method_args:
     sample_frequency: 16000
     num_mel_bins: 80

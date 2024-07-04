@@ -4,6 +4,10 @@ import torchaudio.compliance.kaldi as Kaldi
 from torch import nn
 from torchaudio.transforms import MelSpectrogram, Spectrogram, MFCC
 
+from macls.utils.logger import setup_logger
+
+logger = setup_logger(__name__)
+
 
 class AudioFeaturizer(nn.Module):
     """音频特征器
@@ -21,14 +25,17 @@ class AudioFeaturizer(nn.Module):
         self._method_args = method_args
         self._feature_method = feature_method
         self.use_hf_model = use_hf_model
-        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         if self.use_hf_model:
             from transformers import AutoModel, AutoFeatureExtractor
+            # 判断是否使用GPU提取特征
+            use_gpu = torch.cuda.is_available() and method_args.get('use_gpu', True)
+            self.device = torch.device("cuda") if use_gpu else torch.device("cpu")
             # 加载Wav2Vec2类似模型
             self.processor = AutoFeatureExtractor.from_pretrained(feature_method)
             self.feature_model = AutoModel.from_pretrained(feature_method).to(self.device)
+            logger.info(f'使用模型 {feature_method} 提取特征')
             # 获取模型的输出通道数
-            inputs = self.processor(np.ones(16000 * 3, dtype=np.float32), sampling_rate=16000,
+            inputs = self.processor(np.ones(16000 * 1, dtype=np.float32), sampling_rate=16000,
                                     return_tensors="pt").to(self.device)
             with torch.no_grad():
                 outputs = self.feature_model(**inputs)
@@ -44,6 +51,7 @@ class AudioFeaturizer(nn.Module):
                 self.feat_fun = KaldiFbank(**method_args)
             else:
                 raise Exception(f'预处理方法 {self._feature_method} 不存在!')
+            logger.info(f'使用 {feature_method} 提取特征')
 
     def forward(self, waveforms, input_lens_ratio=None):
         """从AudioSegment中提取音频特征
