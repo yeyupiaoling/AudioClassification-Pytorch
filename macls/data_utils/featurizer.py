@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torchaudio.compliance.kaldi as Kaldi
 from torch import nn
@@ -9,24 +10,40 @@ class AudioFeaturizer(nn.Module):
 
     :param feature_method: 所使用的预处理方法
     :type feature_method: str
+    :param use_hf_model: 是否使用HF上的Wav2Vec2类似模型提取音频特征
+    :type use_hf_model: bool
     :param method_args: 预处理方法的参数
     :type method_args: dict
     """
 
-    def __init__(self, feature_method='MelSpectrogram', method_args={}):
+    def __init__(self, feature_method='MelSpectrogram', use_hf_model=False, method_args={}):
         super().__init__()
         self._method_args = method_args
         self._feature_method = feature_method
-        if feature_method == 'MelSpectrogram':
-            self.feat_fun = MelSpectrogram(**method_args)
-        elif feature_method == 'Spectrogram':
-            self.feat_fun = Spectrogram(**method_args)
-        elif feature_method == 'MFCC':
-            self.feat_fun = MFCC(**method_args)
-        elif feature_method == 'Fbank':
-            self.feat_fun = KaldiFbank(**method_args)
+        self.use_hf_model = use_hf_model
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        if self.use_hf_model:
+            from transformers import AutoModel, AutoFeatureExtractor
+            # 加载Wav2Vec2类似模型
+            self.processor = AutoFeatureExtractor.from_pretrained(feature_method)
+            self.feature_model = AutoModel.from_pretrained(feature_method).to(self.device)
+            # 获取模型的输出通道数
+            inputs = self.processor(np.ones(16000 * 3, dtype=np.float32), sampling_rate=16000,
+                                    return_tensors="pt").to(self.device)
+            with torch.no_grad():
+                outputs = self.feature_model(**inputs)
+                self.output_channels = outputs.extract_features.shape[2]
         else:
-            raise Exception(f'预处理方法 {self._feature_method} 不存在!')
+            if feature_method == 'MelSpectrogram':
+                self.feat_fun = MelSpectrogram(**method_args)
+            elif feature_method == 'Spectrogram':
+                self.feat_fun = Spectrogram(**method_args)
+            elif feature_method == 'MFCC':
+                self.feat_fun = MFCC(**method_args)
+            elif feature_method == 'Fbank':
+                self.feat_fun = KaldiFbank(**method_args)
+            else:
+                raise Exception(f'预处理方法 {self._feature_method} 不存在!')
 
     def forward(self, waveforms, input_lens_ratio=None):
         """从AudioSegment中提取音频特征
@@ -40,8 +57,19 @@ class AudioFeaturizer(nn.Module):
         """
         if len(waveforms.shape) == 1:
             waveforms = waveforms.unsqueeze(0)
-        feature = self.feat_fun(waveforms)
-        feature = feature.transpose(2, 1)
+        if self.use_hf_model:
+            # 使用HF上的Wav2Vec2类似模型提取音频特征
+            if isinstance(waveforms, torch.Tensor):
+                waveforms = waveforms.numpy()
+            inputs = self.processor(waveforms, sampling_rate=16000,
+                                    return_tensors="pt").to(self.device)
+            with torch.no_grad():
+                outputs = self.feature_model(**inputs)
+                feature = outputs.extract_features.cpu().detach()
+        else:
+            # 使用普通方法提取音频特征
+            feature = self.feat_fun(waveforms)
+            feature = feature.transpose(2, 1)
         # 归一化
         feature = feature - feature.mean(1, keepdim=True)
         if input_lens_ratio is not None:
@@ -64,6 +92,8 @@ class AudioFeaturizer(nn.Module):
         :return: 特征大小
         :rtype: int
         """
+        if self.use_hf_model:
+            return self.output_channels
         if self._feature_method == 'MelSpectrogram':
             return self._method_args.get('n_mels', 128)
         elif self._feature_method == 'Spectrogram':
@@ -84,7 +114,7 @@ class KaldiFbank(nn.Module):
     def forward(self, waveforms):
         """
         :param waveforms: [Batch, Length]
-        :return: [Batch, Length, Feature]
+        :return: [Batch, Feature, Length]
         """
         log_fbanks = []
         for waveform in waveforms:

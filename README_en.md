@@ -19,15 +19,15 @@ This project is a sound classification project based on Pytorch, aiming to reali
 # Environment
 
  - Anaconda 3
- - Python 3.8
- - Pytorch 1.13.1
- - Windows 10 or Ubuntu 18.04
+ - Python 3.11
+ - Pytorch 2.0.1
+ - Windows 11 or Ubuntu 22.04
 
 # Project Features
 
 1. Supporting models: EcapaTdnn、PANNS、TDNN、Res2Net、ResNetSE、CAMPPlus、ERes2Net
 2. Supporting pooling: AttentiveStatsPool(ASP)、SelfAttentivePooling(SAP)、TemporalStatisticsPooling(TSP)、TemporalAveragePooling(TAP)
-3. Support preprocessing methods: MelSpectrogram、Spectrogram、MFCC、Fbank
+3. Support preprocessing methods: MelSpectrogram、Spectrogram、MFCC、Fbank、Wav2vec2.0、WavLM
 
 **Model Paper：**
 
@@ -58,7 +58,7 @@ This project is a sound classification project based on Pytorch, aiming to reali
 
  - The GPU version of Pytorch will be installed first, please skip it if you already have it installed.
 ```shell
-conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.6 -c pytorch -c nvidia
+conda install pytorch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 pytorch-cuda=11.7 -c pytorch -c nvidia
 ```
 
  - Install macls.
@@ -96,21 +96,21 @@ dataset/UrbanSound8K/audio/fold4/109711-3-2-4.wav	3
 
 # Change preprocessing methods
 
-By default, the MelSpectrogram preprocessing method is used in the configuration file. If you want to use other preprocessing methods, you can modify the following installation in the configuration file, and the specific value can be modified according to your own situation. If it's not clear how to set the parameters, you can remove that section and just use the default values.
+By default, the Fbank preprocessing method is used in the configuration file. If you want to use other preprocessing methods, you can modify the following installation in the configuration file, and the specific value can be modified according to your own situation. If it's not clear how to set the parameters, you can remove that section and just use the default values.
 
 ```yaml
+# 数据预处理参数
 preprocess_conf:
-  # 音频预处理方法，支持：MelSpectrogram、Spectrogram、MFCC、Fbank
-  feature_method: 'MelSpectrogram'
-  # 设置API参数，更参数查看对应API，不清楚的可以直接删除该部分，直接使用默认值
+  # 是否使用HF上的Wav2Vec2类似模型提取音频特征
+  use_hf_model: False
+  # 音频预处理方法，也可以叫特征提取方法
+  # 当use_hf_model为False时，支持：MelSpectrogram、Spectrogram、MFCC、Fbank
+  # 当use_hf_model为True时，指定的是HuggingFace的模型或者本地路径，比如facebook/w2v-bert-2.0或者./feature_models/w2v-bert-2.0
+  feature_method: 'Fbank'
+  # 设置API参数，更参数查看对应API，不清楚的可以直接删除该部分，直接使用默认值，当use_hf_model为False时，该参数才有效
   method_args:
-    sample_rate: 16000
-    n_fft: 1024
-    hop_length: 320
-    win_length: 1024
-    f_min: 50.0
-    f_max: 14000.0
-    n_mels: 64
+    sample_frequency: 16000
+    num_mel_bins: 80
 ```
 
 ## 训练

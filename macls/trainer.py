@@ -72,6 +72,9 @@ class MAClsTrainer(object):
         if platform.system().lower() == 'windows':
             self.configs.dataset_conf.dataLoader.num_workers = 0
             logger.warning('Windows系统不支持多线程读取数据，已自动关闭！')
+        if self.configs.preprocess_conf.get('use_hf_model', False):
+            self.configs.dataset_conf.dataLoader.num_workers = 0
+            logger.warning('使用HuggingFace模型不支持多线程进行特征提取，已自动关闭！')
         # 特征增强
         self.spec_aug = SpecAug(**self.configs.dataset_conf.get('spec_aug_args', {}))
         self.spec_aug.to(self.device)
@@ -89,6 +92,7 @@ class MAClsTrainer(object):
         """
         # 获取特征器
         self.audio_featurizer = AudioFeaturizer(feature_method=self.configs.preprocess_conf.feature_method,
+                                                use_hf_model=self.configs.preprocess_conf.get('use_hf_model', False),
                                                 method_args=self.configs.preprocess_conf.get('method_args', {}))
         if is_train:
             self.train_dataset = MAClsDataset(data_list_path=self.configs.dataset_conf.train_list,
@@ -127,17 +131,20 @@ class MAClsTrainer(object):
                                       batch_size=self.configs.dataset_conf.eval_conf.batch_size,
                                       num_workers=self.configs.dataset_conf.dataLoader.num_workers)
 
-    def extract_features(self, save_dir='dataset/features'):
+    def extract_features(self, save_dir='dataset/features', max_duration=100):
         """ 提取特征保存文件
 
         :param save_dir: 保存路径
+        :param max_duration: 提取特征的最大时长，避免过长显存不足，单位秒
         """
         self.audio_featurizer = AudioFeaturizer(feature_method=self.configs.preprocess_conf.feature_method,
+                                                use_hf_model=self.configs.preprocess_conf.get('use_hf_model', False),
                                                 method_args=self.configs.preprocess_conf.get('method_args', {}))
         for i, data_list in enumerate([self.configs.dataset_conf.train_list, self.configs.dataset_conf.test_list]):
             # 获取测试数据
             test_dataset = MAClsDataset(data_list_path=data_list,
                                         audio_featurizer=self.audio_featurizer,
+                                        max_duration=max_duration,
                                         do_vad=self.configs.dataset_conf.do_vad,
                                         sample_rate=self.configs.dataset_conf.sample_rate,
                                         use_dB_normalization=self.configs.dataset_conf.use_dB_normalization,

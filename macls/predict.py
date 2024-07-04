@@ -48,6 +48,7 @@ class MAClsPredictor:
         assert self.configs.use_model in SUPPORT_MODEL, f'没有该模型：{self.configs.use_model}'
         # 获取特征器
         self._audio_featurizer = AudioFeaturizer(feature_method=self.configs.preprocess_conf.feature_method,
+                                                 use_hf_model=self.configs.preprocess_conf.get('use_hf_model', False),
                                                  method_args=self.configs.preprocess_conf.get('method_args', {}))
         # 获取分类标签
         with open(self.configs.dataset_conf.label_list_path, 'r', encoding='utf-8') as f:

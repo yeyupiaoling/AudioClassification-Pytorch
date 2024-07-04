@@ -8,5 +8,6 @@ log/
 output/
 models/
 pretrained_models/
+feature_models/
 temp/
 test*.py

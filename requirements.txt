@@ -8,7 +8,6 @@ numba>=0.53.0
 pydub~=0.25.1
 matplotlib>=3.5.2
 termcolor>=1.1.0
-typeguard==2.13.3
 pillow>=8.3.2
 tqdm>=4.64.1
 visualdl>=2.2.3
