@@ -61,6 +61,9 @@ class MAClsDataset(Dataset):
         # 获取数据列表
         with open(self.data_list_path, 'r', encoding='utf-8') as f:
             self.lines = f.readlines()
+        # 评估模式下，数据列表需要排序
+        if self.mode == 'eval':
+            self.sort_list()
 
     def __getitem__(self, idx):
         # 分割数据文件路径和标签
