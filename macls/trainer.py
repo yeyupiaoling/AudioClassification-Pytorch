@@ -127,7 +127,7 @@ class MAClsTrainer(object):
                                          mode='eval')
         self.test_loader = DataLoader(dataset=self.test_dataset,
                                       collate_fn=collate_fn,
-                                      shuffle=True,
+                                      shuffle=False,
                                       batch_size=self.configs.dataset_conf.eval_conf.batch_size,
                                       num_workers=self.configs.dataset_conf.dataLoader.num_workers)
 

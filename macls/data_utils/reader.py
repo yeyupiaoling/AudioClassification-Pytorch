@@ -4,6 +4,7 @@ import random
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from macls.data_utils.audio import AudioSegment
 from macls.data_utils.featurizer import AudioFeaturizer
@@ -22,7 +23,6 @@ class MAClsDataset(Dataset):
                  mode='train',
                  sample_rate=16000,
                  aug_conf={},
-                 num_speakers=1000,
                  use_dB_normalization=True,
                  target_dB=-20):
         """音频数据加载器
@@ -36,12 +36,12 @@ class MAClsDataset(Dataset):
             aug_conf: 用于指定音频增强的配置
             mode: 数据集模式。在训练模式下，数据集可能会进行一些数据增强的预处理
             sample_rate: 采样率
-            num_speakers: 总说话人数量
             use_dB_normalization: 是否对音频进行音量归一化
             target_dB: 音量归一化的大小
         """
         super(MAClsDataset, self).__init__()
-        assert mode in ['train', 'eval', 'create_data', 'extract_feature']
+        assert mode in ['train', 'eval', 'extract_feature']
+        self.data_list_path = data_list_path
         self.do_vad = do_vad
         self.max_duration = max_duration
         self.min_duration = min_duration
@@ -50,15 +50,17 @@ class MAClsDataset(Dataset):
         self._use_dB_normalization = use_dB_normalization
         self._target_dB = target_dB
         self.aug_conf = aug_conf
-        self.num_speakers = num_speakers
         self.noises_path = None
         # 获取特征器
         self.audio_featurizer = audio_featurizer
         # 获取特征裁剪的大小
         self.max_feature_len = self.get_crop_feature_len()
         # 获取数据列表
-        with open(data_list_path, 'r', encoding='utf-8') as f:
+        with open(self.data_list_path, 'r', encoding='utf-8') as f:
             self.lines = f.readlines()
+        # 评估模式下，数据列表需要排序
+        if self.mode == 'eval':
+            self.sort_list()
 
     def __getitem__(self, idx):
         # 分割数据文件路径和标签
@@ -67,7 +69,7 @@ class MAClsDataset(Dataset):
         if data_path.endswith('.npy'):
             feature = np.load(data_path)
             if feature.shape[0] > self.max_feature_len:
-                crop_start = random.randint(0, feature.shape[0] - self.max_feature_len) if self.mode == 'eval' else 0
+                crop_start = random.randint(0, feature.shape[0] - self.max_feature_len) if self.mode == 'train' else 0
                 feature = feature[crop_start:crop_start + self.max_feature_len, :]
             feature = torch.tensor(feature, dtype=torch.float32)
         else:
@@ -102,11 +104,31 @@ class MAClsDataset(Dataset):
     def __len__(self):
         return len(self.lines)
 
+    # 获取特征裁剪的大小，对应max_duration音频提取特征后的长度
     def get_crop_feature_len(self):
         samples = torch.randn((1, self.max_duration * self._target_sample_rate))
         feature = self.audio_featurizer(samples).squeeze(0)
         freq_len = feature.size(0)
         return freq_len
+
+    # 数据列表需要排序
+    def sort_list(self):
+        lengths = []
+        for line in tqdm(self.lines, desc=f"对列表[{self.data_list_path}]进行长度排序"):
+            # 分割数据文件路径和标签
+            data_path, _ = line.split('\t')
+            if data_path.endswith('.npy'):
+                feature = np.load(data_path)
+                length = feature.shape[0]
+                lengths.append(length)
+            else:
+                # 读取音频
+                audio_segment = AudioSegment.from_file(data_path)
+                length = audio_segment.duration
+                lengths.append(length)
+        # 对长度排序并获取索引
+        sorted_indexes = np.argsort(lengths)
+        self.lines = [self.lines[i] for i in sorted_indexes]
 
     # 音频增强
     def augment_audio(self,
