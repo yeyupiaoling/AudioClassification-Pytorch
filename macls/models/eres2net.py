@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from macls.models.pooling import TemporalAveragePooling, TemporalStatsPool, AttentiveStatsPool
+from macls.models.pooling import TemporalStatsPool
 
 __all__ = ['ERes2Net', 'ERes2NetV2']
 
@@ -219,13 +219,8 @@ class ERes2Net(nn.Module):
         self.fuse_mode123 = AFF(channels=m_channels * 8 * mul_channel)
         self.fuse_mode1234 = AFF(channels=m_channels * 16 * mul_channel)
 
-        self.n_stats = 1 if pooling_type == 'TAP' else 2
-        if pooling_type == "TAP":
-            self.pooling = TemporalAveragePooling()
-        elif pooling_type == "TSTP":
-            self.pooling = TemporalStatsPool()
-        else:
-            raise Exception(f'没有{pooling_type}池化层！')
+        self.n_stats = 2
+        self.pooling = TemporalStatsPool()
 
         self.seg_1 = nn.Linear(self.stats_dim * self.expansion * self.n_stats, embd_dim)
         if self.two_emb_layer:
@@ -430,15 +425,8 @@ class ERes2NetV2(nn.Module):
         # Bottom-up fusion module
         self.fuse34 = AFF(channels=m_channels * 16, r=4)
 
-        self.n_stats = 1 if pooling_type == 'TAP' else 2
-        if pooling_type == "TAP":
-            self.pooling = TemporalAveragePooling()
-        elif pooling_type == "ASP":
-            self.pooling = AttentiveStatsPool(in_dim=self.stats_dim * self.expansion)
-        elif pooling_type == "TSTP":
-            self.pooling = TemporalStatsPool()
-        else:
-            raise Exception(f'没有{pooling_type}池化层！')
+        self.n_stats = 2
+        self.pooling = TemporalStatsPool()
 
         self.seg_1 = nn.Linear(self.stats_dim * self.expansion * self.n_stats, embd_dim)
         if self.two_emb_layer:
