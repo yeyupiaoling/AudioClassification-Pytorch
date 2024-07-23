@@ -1,7 +1,5 @@
-import json
 import os
 import platform
-import shutil
 import time
 from datetime import timedelta
 
@@ -10,27 +8,19 @@ import torch
 import torch.distributed as dist
 import yaml
 from sklearn.metrics import confusion_matrix
-from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data.distributed import DistributedSampler
 from torchinfo import summary
 from tqdm import tqdm
 from visualdl import LogWriter
 
-from macls import SUPPORT_MODEL, __version__
+from macls import SUPPORT_MODEL
 from macls.data_utils.collate_fn import collate_fn
 from macls.data_utils.featurizer import AudioFeaturizer
 from macls.data_utils.reader import MAClsDataset
 from macls.data_utils.spec_aug import SpecAug
 from macls.metric.metrics import accuracy
 from macls.models import build_model
-from macls.models.campplus import CAMPPlus
-from macls.models.ecapa_tdnn import EcapaTdnn
-from macls.models.eres2net import ERes2NetV2, ERes2Net
-from macls.models.panns import PANNS_CNN6, PANNS_CNN10, PANNS_CNN14
-from macls.models.res2net import Res2Net
-from macls.models.resnet_se import ResNetSE
-from macls.models.tdnn import TDNN
 from macls.optimizer import build_optimizer, build_lr_scheduler
 from macls.utils.checkpoint import load_pretrained, load_checkpoint, save_checkpoint
 from macls.utils.logger import setup_logger
