@@ -20,18 +20,18 @@ dataset_conf:
     drop_last: True
     # 读取数据的线程数量
     num_workers: 4
-  # 训练数据的数据列表路径
-  train_list: 'dataset/train_list.txt'
-  # 测试数据的数据列表路径
-  test_list: 'dataset/test_list.txt'
-  # 标签列表
-  label_list_path: 'dataset/label_list.txt'
   # 评估的数据要特殊处理
   eval_conf:
     # 评估的批量大小
     batch_size: 8
     # 最长的音频长度
     max_duration: 20
+  # 训练数据的数据列表路径
+  train_list: 'dataset/train_list.txt'
+  # 测试数据的数据列表路径
+  test_list: 'dataset/test_list.txt'
+  # 标签列表
+  label_list_path: 'dataset/label_list.txt'
   # 数据增强参数
   aug_conf:
     # 是否使用语速扰动增强
