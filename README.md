@@ -46,23 +46,21 @@
 
 # 模型测试表
 
-|      模型      | Params(M) | 预处理方法 |        数据集        |   类别数量   |   准确率   |   获取模型   |
-|:------------:|:---------:|:-----:|:-----------------:|:--------:|:-------:|:--------:|
-|   ResNetSE   |    7.8    | Flank |   UrbanSound8K    |    10    | 0.98863 | 加入知识星球获取 |
-|   CAMPPlus   |    7.1    | Flank |   UrbanSound8K    |    10    | 0.97727 | 加入知识星球获取 |
-|   ERes2Net   |    6.6    | Flank |   UrbanSound8K    |    10    | 0.96590 | 加入知识星球获取 |
-|  ERes2NetV2  |    5.4    | Flank |   UrbanSound8K    |    10    | 0.90568 | 加入知识星球获取 |
-| PANNS（CNN10） |    5.2    | Flank |   UrbanSound8K    |    10    | 0.96590 | 加入知识星球获取 |
-|   Res2Net    |    5.0    | Flank |   UrbanSound8K    |    10    | 0.94318 | 加入知识星球获取 |
-|     TDNN     |    2.6    | Flank |   UrbanSound8K    |    10    | 0.92045 | 加入知识星球获取 |
-|  EcapaTdnn   |    6.1    | Flank |   UrbanSound8K    |    10    | 0.91876 | 加入知识星球获取 |
-|   CAMPPlus   |    6.1    | Flank | CN-Celeb和VoxCeleb | 2(中英文语种) | 0.99320 | 加入知识星球获取 |
-|   ResNetSE   |    9.8    | Flank | CN-Celeb和VoxCeleb | 2(中英文语种) | 0.99056 | 加入知识星球获取 |
+|      模型      | Params(M) | 预处理方法 |     数据集      | 类别数量 |   准确率   |   获取模型   |
+|:------------:|:---------:|:-----:|:------------:|:----:|:-------:|:--------:|
+|  ERes2NetV2  |    5.4    | Flank | UrbanSound8K |  10  | 0.95642 | 加入知识星球获取 |
+|   ResNetSE   |    7.8    | Flank | UrbanSound8K |  10  | 0.95528 | 加入知识星球获取 |
+|   ERes2Net   |    6.6    | Flank | UrbanSound8K |  10  | 0.94839 | 加入知识星球获取 |
+|   CAMPPlus   |    7.1    | Flank | UrbanSound8K |  10  | 0.95413 | 加入知识星球获取 |
+| PANNS（CNN10） |    5.2    | Flank | UrbanSound8K |  10  | 0.93807 | 加入知识星球获取 |
+|  EcapaTdnn   |    6.4    | Flank | UrbanSound8K |  10  | 0.93519 | 加入知识星球获取 |
+|     TDNN     |    2.6    | Flank | UrbanSound8K |  10  | 0.92202 | 加入知识星球获取 |
+|   Res2Net    |    5.0    | Flank | UrbanSound8K |  10  | 0.91284 | 加入知识星球获取 |
 
 
-说明：
+**说明：**
 
-1. 使用的测试集为从数据集中每10条音频取一条，共88条。
+使用的测试集为从数据集中每10条音频取一条，共874条。
 
 ## 安装环境
 
