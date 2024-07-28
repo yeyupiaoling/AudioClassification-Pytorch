@@ -14,7 +14,6 @@ from torchinfo import summary
 from tqdm import tqdm
 from visualdl import LogWriter
 
-from macls import SUPPORT_MODEL
 from macls.data_utils.collate_fn import collate_fn
 from macls.data_utils.featurizer import AudioFeaturizer
 from macls.data_utils.reader import MAClsDataset
@@ -49,7 +48,6 @@ class MAClsTrainer(object):
                 configs = yaml.load(f.read(), Loader=yaml.FullLoader)
             print_arguments(configs=configs)
         self.configs = dict_to_object(configs)
-        assert self.configs.model_conf.model in SUPPORT_MODEL, f'没有该模型：{self.configs.model_conf.model}'
         self.model = None
         self.optimizer = None
         self.scheduler = None
