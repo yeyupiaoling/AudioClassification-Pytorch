@@ -3,11 +3,8 @@ import os
 import shutil
 
 import torch
-
+from loguru import logger
 from macls import __version__
-from macls.utils.logger import setup_logger
-
-logger = setup_logger(__name__)
 
 
 def load_pretrained(model, pretrained_model):

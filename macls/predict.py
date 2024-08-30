@@ -5,14 +5,11 @@ from typing import List
 import numpy as np
 import torch
 import yaml
-
-from macls.data_utils.audio import AudioSegment
+from loguru import logger
+from yeaudio.audio import AudioSegment
 from macls.data_utils.featurizer import AudioFeaturizer
 from macls.models import build_model
-from macls.utils.logger import setup_logger
 from macls.utils.utils import dict_to_object, print_arguments
-
-logger = setup_logger(__name__)
 
 
 class MAClsPredictor:

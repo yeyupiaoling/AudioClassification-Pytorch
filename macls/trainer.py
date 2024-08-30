@@ -12,28 +12,27 @@ from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data.distributed import DistributedSampler
 from torchinfo import summary
 from tqdm import tqdm
+from loguru import logger
 from visualdl import LogWriter
 
+from macls.data_utils.augmentation import SpecAugmentor
 from macls.data_utils.collate_fn import collate_fn
 from macls.data_utils.featurizer import AudioFeaturizer
 from macls.data_utils.reader import MAClsDataset
-from macls.data_utils.spec_aug import SpecAug
 from macls.metric.metrics import accuracy
 from macls.models import build_model
 from macls.optimizer import build_optimizer, build_lr_scheduler
 from macls.utils.checkpoint import load_pretrained, load_checkpoint, save_checkpoint
-from macls.utils.logger import setup_logger
 from macls.utils.utils import dict_to_object, plot_confusion_matrix, print_arguments
-
-logger = setup_logger(__name__)
 
 
 class MAClsTrainer(object):
-    def __init__(self, configs, use_gpu=True):
+    def __init__(self, configs, use_gpu=True, data_augment_configs=None):
         """ macls集成工具类
 
         :param configs: 配置字典
         :param use_gpu: 是否使用GPU训练模型
+        :param data_augment_configs: 数据增强配置字典或者其文件路径
         """
         if use_gpu:
             assert (torch.cuda.is_available()), 'GPU不可用'
@@ -57,6 +56,15 @@ class MAClsTrainer(object):
         self.test_dataset = None
         self.test_loader = None
         self.amp_scaler = None
+        # 读取数据增强配置文件
+        if isinstance(data_augment_configs, str):
+            with open(data_augment_configs, 'r', encoding='utf-8') as f:
+                data_augment_configs = yaml.load(f.read(), Loader=yaml.FullLoader)
+            print_arguments(configs=data_augment_configs, title='数据增强配置')
+        self.data_augment_configs = dict_to_object(data_augment_configs)
+        # 特征增强
+        self.spec_aug = SpecAugmentor(**self.data_augment_configs.spec_aug if self.data_augment_configs else {})
+        self.spec_aug.to(self.device)
         # 获取分类标签
         with open(self.configs.dataset_conf.label_list_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
@@ -67,9 +75,6 @@ class MAClsTrainer(object):
         if self.configs.preprocess_conf.get('use_hf_model', False):
             self.configs.dataset_conf.dataLoader.num_workers = 0
             logger.warning('使用HuggingFace模型不支持多线程进行特征提取，已自动关闭！')
-        # 特征增强
-        self.spec_aug = SpecAug(**self.configs.dataset_conf.get('spec_aug_args', {}))
-        self.spec_aug.to(self.device)
         self.max_step, self.train_step = None, None
         self.train_loss, self.train_acc = None, None
         self.train_eta_sec = None
@@ -92,7 +97,7 @@ class MAClsTrainer(object):
         if is_train:
             self.train_dataset = MAClsDataset(data_list_path=self.configs.dataset_conf.train_list,
                                               audio_featurizer=self.audio_featurizer,
-                                              aug_conf=self.configs.dataset_conf.aug_conf,
+                                              aug_conf=self.data_augment_configs,
                                               mode='train',
                                               **dataset_args)
             # 设置支持多卡训练
@@ -197,8 +202,7 @@ class MAClsTrainer(object):
                 features = features.to(self.device)
                 label = label.to(self.device).long()
             # 特征增强
-            if self.configs.dataset_conf.use_spec_aug:
-                features = self.spec_aug(features)
+            features = self.spec_aug(features)
             # 执行模型计算，是否开启自动混合精度
             with torch.cuda.amp.autocast(enabled=self.configs.train_conf.enable_amp):
                 output = self.model(features)

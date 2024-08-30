@@ -3,10 +3,7 @@ import torch
 import torchaudio.compliance.kaldi as Kaldi
 from torch import nn
 from torchaudio.transforms import MelSpectrogram, Spectrogram, MFCC
-
-from macls.utils.logger import setup_logger
-
-logger = setup_logger(__name__)
+from loguru import logger
 
 
 class AudioFeaturizer(nn.Module):
