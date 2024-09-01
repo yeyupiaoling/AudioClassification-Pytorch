@@ -44,7 +44,6 @@ class MAClsDataset(Dataset):
         self._target_sample_rate = sample_rate
         self._use_dB_normalization = use_dB_normalization
         self._target_dB = target_dB
-        self.aug_conf = aug_conf
         self.speed_augment = None
         self.volume_augment = None
         self.noise_augment = None
@@ -57,9 +56,9 @@ class MAClsDataset(Dataset):
         # 获取数据列表
         with open(self.data_list_path, 'r', encoding='utf-8') as f:
             self.lines = f.readlines()
-        if mode == 'train':
+        if mode == 'train' and aug_conf is not None:
             # 获取数据增强器
-            self.get_augment()
+            self.get_augmentor(aug_conf)
         # 评估模式下，数据列表需要排序
         if self.mode == 'eval':
             self.sort_list()
@@ -82,13 +81,13 @@ class MAClsDataset(Dataset):
             if self.mode == 'train':
                 if audio_segment.duration < self.min_duration:
                     return self.__getitem__(idx + 1 if idx < len(self.lines) - 1 else 0)
-            # 重采样
-            if audio_segment.sample_rate != self._target_sample_rate:
-                audio_segment.resample(self._target_sample_rate)
             # 音频增强
             if self.mode == 'train':
                 audio_segment = self.augment_audio(audio_segment)
-            # decibel normalization
+            # 重采样
+            if audio_segment.sample_rate != self._target_sample_rate:
+                audio_segment.resample(self._target_sample_rate)
+            # 音量归一化
             if self._use_dB_normalization:
                 audio_segment.normalize(target_db=self._target_dB)
             # 裁剪需要的数据
@@ -133,17 +132,17 @@ class MAClsDataset(Dataset):
         self.lines = [self.lines[i] for i in sorted_indexes]
 
     # 获取数据增强器
-    def get_augment(self):
-        if self.aug_conf.speed is not None:
-            self.speed_augment = SpeedPerturbAugmentor(**self.aug_conf.speed)
-        if self.aug_conf.volume is not None:
-            self.volume_augment = VolumePerturbAugmentor(**self.aug_conf.volume)
-        if self.aug_conf.noise is not None:
-            self.noise_augment = NoisePerturbAugmentor(**self.aug_conf.noise)
-        if self.aug_conf.reverb is not None:
-            self.reverb_augment = ReverbPerturbAugmentor(**self.aug_conf.reverb)
-        if self.aug_conf.spec_aug is not None:
-            self.spec_augment = SpecAugmentor(**self.aug_conf.spec_aug)
+    def get_augmentor(self, aug_conf):
+        if aug_conf.speed is not None:
+            self.speed_augment = SpeedPerturbAugmentor(**aug_conf.speed)
+        if aug_conf.volume is not None:
+            self.volume_augment = VolumePerturbAugmentor(**aug_conf.volume)
+        if aug_conf.noise is not None:
+            self.noise_augment = NoisePerturbAugmentor(**aug_conf.noise)
+        if aug_conf.reverb is not None:
+            self.reverb_augment = ReverbPerturbAugmentor(**aug_conf.reverb)
+        if aug_conf.spec_aug is not None:
+            self.spec_augment = SpecAugmentor(**aug_conf.spec_aug)
 
     # 音频增强
     def augment_audio(self, audio_segment):
