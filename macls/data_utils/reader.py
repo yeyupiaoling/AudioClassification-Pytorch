@@ -1,15 +1,13 @@
-import os
 import random
 
 import numpy as np
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
-
 from yeaudio.audio import AudioSegment
+from yeaudio.augmentation import SpeedPerturbAugmentor, VolumePerturbAugmentor, NoisePerturbAugmentor, \
+    ReverbPerturbAugmentor, SpecAugmentor
 
-from macls.data_utils.augmentation import SpeedPerturbAugmentor, VolumePerturbAugmentor, NoisePerturbAugmentor, \
-    ReverbPerturbAugmentor
 from macls.data_utils.featurizer import AudioFeaturizer
 
 
@@ -46,6 +44,12 @@ class MAClsDataset(Dataset):
         self._target_sample_rate = sample_rate
         self._use_dB_normalization = use_dB_normalization
         self._target_dB = target_dB
+        self.aug_conf = aug_conf
+        self.speed_augment = None
+        self.volume_augment = None
+        self.noise_augment = None
+        self.reverb_augment = None
+        self.spec_augment = None
         # 获取特征器
         self.audio_featurizer = audio_featurizer
         # 获取特征裁剪的大小
@@ -55,10 +59,7 @@ class MAClsDataset(Dataset):
             self.lines = f.readlines()
         if mode == 'train':
             # 获取数据增强器
-            self.speed_augment = SpeedPerturbAugmentor(**aug_conf.get('speed', {}))
-            self.volume_augment = VolumePerturbAugmentor(**aug_conf.get('volume', {}))
-            self.noise_augment = NoisePerturbAugmentor(**aug_conf.get('noise', {}))
-            self.reverb_augment = ReverbPerturbAugmentor(**aug_conf.get('reverb', {}))
+            self.get_augment()
         # 评估模式下，数据列表需要排序
         if self.mode == 'eval':
             self.sort_list()
@@ -96,6 +97,9 @@ class MAClsDataset(Dataset):
             samples = torch.tensor(audio_segment.samples, dtype=torch.float32)
             feature = self.audio_featurizer(samples)
             feature = feature.squeeze(0)
+        if self.mode == 'train' and self.spec_augment is not None:
+            feature = self.spec_augment(feature.cpu().numpy())
+            feature = torch.tensor(feature, dtype=torch.float32)
         label = torch.tensor(int(label), dtype=torch.int64)
         return feature, label
 
@@ -128,10 +132,27 @@ class MAClsDataset(Dataset):
         sorted_indexes = np.argsort(lengths)
         self.lines = [self.lines[i] for i in sorted_indexes]
 
+    # 获取数据增强器
+    def get_augment(self):
+        if self.aug_conf.speed is not None:
+            self.speed_augment = SpeedPerturbAugmentor(**self.aug_conf.speed)
+        if self.aug_conf.volume is not None:
+            self.volume_augment = VolumePerturbAugmentor(**self.aug_conf.volume)
+        if self.aug_conf.noise is not None:
+            self.noise_augment = NoisePerturbAugmentor(**self.aug_conf.noise)
+        if self.aug_conf.reverb is not None:
+            self.reverb_augment = ReverbPerturbAugmentor(**self.aug_conf.reverb)
+        if self.aug_conf.spec_aug is not None:
+            self.spec_augment = SpecAugmentor(**self.aug_conf.spec_aug)
+
     # 音频增强
     def augment_audio(self, audio_segment):
-        audio_segment = self.speed_augment(audio_segment)
-        audio_segment = self.volume_augment(audio_segment)
-        audio_segment = self.noise_augment(audio_segment)
-        audio_segment = self.reverb_augment(audio_segment)
+        if self.speed_augment is not None:
+            audio_segment = self.speed_augment(audio_segment)
+        if self.volume_augment is not None:
+            audio_segment = self.volume_augment(audio_segment)
+        if self.noise_augment is not None:
+            audio_segment = self.noise_augment(audio_segment)
+        if self.reverb_augment is not None:
+            audio_segment = self.reverb_augment(audio_segment)
         return audio_segment

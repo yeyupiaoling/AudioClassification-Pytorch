@@ -15,7 +15,6 @@ from tqdm import tqdm
 from loguru import logger
 from visualdl import LogWriter
 
-from macls.data_utils.augmentation import SpecAugmentor
 from macls.data_utils.collate_fn import collate_fn
 from macls.data_utils.featurizer import AudioFeaturizer
 from macls.data_utils.reader import MAClsDataset
@@ -62,9 +61,6 @@ class MAClsTrainer(object):
                 data_augment_configs = yaml.load(f.read(), Loader=yaml.FullLoader)
             print_arguments(configs=data_augment_configs, title='数据增强配置')
         self.data_augment_configs = dict_to_object(data_augment_configs)
-        # 特征增强
-        self.spec_aug = SpecAugmentor(**self.data_augment_configs.spec_aug if self.data_augment_configs else {})
-        self.spec_aug.to(self.device)
         # 获取分类标签
         with open(self.configs.dataset_conf.label_list_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
@@ -201,10 +197,8 @@ class MAClsTrainer(object):
             else:
                 features = features.to(self.device)
                 label = label.to(self.device).long()
-            # 特征增强
-            features = self.spec_aug(features)
             # 执行模型计算，是否开启自动混合精度
-            with torch.cuda.amp.autocast(enabled=self.configs.train_conf.enable_amp):
+            with torch.autocast('cuda', enabled=self.configs.train_conf.enable_amp):
                 output = self.model(features)
             # 计算损失值
             los = self.loss(output, label)
