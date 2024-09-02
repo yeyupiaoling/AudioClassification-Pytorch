@@ -170,7 +170,7 @@ class MAClsTrainer(object):
         self.loss = torch.nn.CrossEntropyLoss(label_smoothing=label_smoothing)
         if is_train:
             if self.configs.train_conf.enable_amp:
-                self.amp_scaler = torch.cuda.amp.GradScaler(init_scale=1024)
+                self.amp_scaler = torch.GradScaler(init_scale=1024)
             # 获取优化方法
             self.optimizer = build_optimizer(params=self.model.parameters(), configs=self.configs)
             # 学习率衰减函数
