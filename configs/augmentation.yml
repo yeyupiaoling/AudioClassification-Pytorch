@@ -15,7 +15,7 @@ volume:
 # 噪声增强
 noise:
   # 增强概率
-  prob: 0.0
+  prob: 0.5
   # 噪声增强的噪声文件夹
   noise_dir: 'dataset/noise'
   # 针对噪声的最小音量增益
@@ -26,14 +26,14 @@ noise:
 # 混响增强
 reverb:
   # 增强概率
-  prob: 0.0
+  prob: 0.5
   # 混响增强的混响文件夹
   reverb_dir: 'dataset/reverb'
 
 # Spec增强
 spec_aug:
   # 增强概率
-  prob: 0.0
+  prob: 0.5
   # 频域掩蔽的比例
   freq_mask_ratio: 0.1
   # 频域掩蔽次数

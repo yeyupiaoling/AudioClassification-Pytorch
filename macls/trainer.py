@@ -176,8 +176,6 @@ class MAClsTrainer(object):
             # 学习率衰减函数
             self.scheduler = build_lr_scheduler(optimizer=self.optimizer, step_per_epoch=len(self.train_loader),
                                                 configs=self.configs)
-        if self.configs.train_conf.use_compile and torch.__version__ >= "2" and platform.system().lower() != 'windows':
-            self.model = torch.compile(self.model, mode="reduce-overhead")
 
     def __train_epoch(self, epoch_id, local_rank, writer, nranks=0):
         """训练一个epoch
@@ -296,7 +294,6 @@ class MAClsTrainer(object):
         self.train_loss, self.train_acc = None, None
         self.eval_loss, self.eval_acc = None, None
         self.test_log_step, self.train_log_step = 0, 0
-        last_epoch += 1
         if local_rank == 0:
             writer.add_scalar('Train/lr', self.scheduler.get_last_lr()[0], last_epoch)
         # 最大步数
