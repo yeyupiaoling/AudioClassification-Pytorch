@@ -41,18 +41,16 @@ This project is a sound classification project based on Pytorch, aiming to reali
 
 # Model Test
 
-|    Model     | Params(M) | Preprocessing method |        Dataset        | Number Class | Accuracy |
-|:------------:|:---------:|:--------------------:|:---------------------:|:------------:|:--------:|
-|   ResNetSE   |    7.8    |        Flank         |     UrbanSound8K      |      10      | 0.98863  |
-|   CAMPPlus   |    7.1    |        Flank         |     UrbanSound8K      |      10      | 0.97727  |
-|   ERes2Net   |    6.6    |        Flank         |     UrbanSound8K      |      10      | 0.96590  |
-|  ERes2NetV2  |    5.4    |        Flank         |     UrbanSound8K      |      10      | 0.90568  |
-| PANNS（CNN10） |    5.2    |        Flank         |     UrbanSound8K      |      10      | 0.96590  |
-|   Res2Net    |    5.0    |        Flank         |     UrbanSound8K      |      10      | 0.94318  |
-|     TDNN     |    2.6    |        Flank         |     UrbanSound8K      |      10      | 0.92045  |
-|  EcapaTdnn   |    6.1    |        Flank         |     UrbanSound8K      |      10      | 0.91876  |
-|   CAMPPlus   |    6.1    |        Flank         | CN-Celeb and VoxCeleb |  2(CN, EN)   | 0.99320  | 
-|   ResNetSE   |    9.8    |        Flank         | CN-Celeb and VoxCeleb |  2(CN, EN)   | 0.99056  | 
+|    Model     | Params(M) | Preprocessing method |   Dataset    | Number Class | Accuracy |
+|:------------:|:---------:|:--------------------:|:------------:|:------------:|:--------:|
+|   ResNetSE   |    7.8    |        Flank         | UrbanSound8K |      10      | 0.96233  |
+|  ERes2NetV2  |    5.4    |        Flank         | UrbanSound8K |      10      | 0.95662  |
+|   CAMPPlus   |    7.1    |        Flank         | UrbanSound8K |      10      | 0.95454  |
+|  EcapaTdnn   |    6.4    |        Flank         | UrbanSound8K |      10      | 0.95227  |
+|   ERes2Net   |    6.6    |        Flank         | UrbanSound8K |      10      | 0.94292  |
+|     TDNN     |    2.6    |        Flank         | UrbanSound8K |      10      | 0.93977  |
+| PANNS（CNN10） |    5.2    |        Flank         | UrbanSound8K |      10      | 0.92954  |
+|   Res2Net    |    5.0    |        Flank         | UrbanSound8K |      10      | 0.92580  |
 
 ## Installation Environment
 
