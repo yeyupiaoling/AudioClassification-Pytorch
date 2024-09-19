@@ -31,7 +31,6 @@ dataset_conf:
   # 标签列表
   label_list_path: "../dataset/label_list.txt"
   validation_list: "../dataset/validation_list.txt" #using '../OOD_test.parquet'
-  tar_path: "../dataset/CHANGEME.tar"
 
 # 数据预处理参数
 preprocess_conf:

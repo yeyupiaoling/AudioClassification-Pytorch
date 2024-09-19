@@ -9,7 +9,6 @@ from yeaudio.augmentation import SpeedPerturbAugmentor, VolumePerturbAugmentor, 
     ReverbPerturbAugmentor, SpecAugmentor
 
 from macls.data_utils.featurizer import AudioFeaturizer
-from macls.data_utils.tarreader import TarDataset # by placebeyondthecloud
 
 
 class MAClsDataset(Dataset):
@@ -22,8 +21,7 @@ class MAClsDataset(Dataset):
                  sample_rate=16000,
                  aug_conf=None,
                  use_dB_normalization=True,
-                 target_dB=-20,
-                 tar_path=None): # by placebeyondtheclouds
+                 target_dB=-20):
         """音频数据加载器
 
         Args:
@@ -64,10 +62,6 @@ class MAClsDataset(Dataset):
         # 评估模式下，数据列表需要排序
         if self.mode == 'eval':
             self.sort_list()
-        
-        self.tar_path = tar_path  # by placebeyondtheclouds
-        if self.tar_path:# by placebeyondtheclouds
-            self.tar_dataset = TarDataset(self.tar_path)# by placebeyondtheclouds
 
     def __getitem__(self, idx):
         # 分割数据文件路径和标签
@@ -82,11 +76,7 @@ class MAClsDataset(Dataset):
         else:
             audio_path, label = self.lines[idx].strip().split('\t')
             # 读取音频
-            if self.tar_path: # by placebeyondtheclouds
-                audio_data = self.tar_dataset.read_file(audio_path) # by placebeyondtheclouds
-                audio_segment = AudioSegment.from_file(io.BytesIO(audio_data)) # by placebeyondtheclouds
-            else: # by placebeyondtheclouds
-                audio_segment = AudioSegment.from_file(audio_path)
+            audio_segment = AudioSegment.from_file(audio_path)
             # 数据太短不利于训练
             if self.mode == 'train' or self.mode == 'val':  # ---- drop short audios during validation also---- by placebeyondtheclouds
                 if audio_segment.duration < self.min_duration:
@@ -113,10 +103,7 @@ class MAClsDataset(Dataset):
         return feature, label
 
     def __len__(self):
-        if self.tar_path:# by placebeyondtheclouds
-            return len(self.tar_dataset.list_files())# by placebeyondtheclouds
-        else:# by placebeyondtheclouds
-            return len(self.lines)
+        return len(self.lines)
 
     # 获取特征裁剪的大小，对应max_duration音频提取特征后的长度
     def get_crop_feature_len(self):

@@ -34,6 +34,9 @@ metrics are modified for binary classification. multiclass classification needs 
   - multi-node training
   - add tar option
   - added MLflow logging
+
+- in checkpoint.py
+
   - checkpoints of all epochs are now saved (not just the last 3)
 
 - in predict.py
@@ -48,7 +51,7 @@ metrics are modified for binary classification. multiclass classification needs 
 
 - in reader.py
 
-  - add tar option
+  drop short audios during validation also
 
 - in .gitignore
 
@@ -57,7 +60,6 @@ metrics are modified for binary classification. multiclass classification needs 
 ### to do:
 
 - also add jupyter notebook with
-  - tar creation code
   - file list creation code
   - evaluation code
   - fix metrics for multilabel classification
