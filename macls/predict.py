@@ -109,7 +109,7 @@ class MAClsPredictor:
         # 最大概率的label
         lab = np.argsort(result)[-1]
         score = result[lab]
-        return self.class_labels[lab], round(float(score), 5)
+        return self.class_labels[lab], round(float(score), 5), result # by placebeyondtheclouds
 
     def predict_batch(self, audios_data: List, sample_rate=16000):
         """预测一批音频的特征
@@ -149,4 +149,4 @@ class MAClsPredictor:
             score = result[lab]
             labels.append(self.class_labels[lab])
             scores.append(round(float(score), 5))
-        return labels, scores
+        return labels, scores, results # by placebeyondtheclouds

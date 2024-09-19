@@ -153,5 +153,6 @@ def save_checkpoint(configs, model, optimizer, amp_scaler, save_model_path, epoc
                                       f'{configs.model_conf.model}_{save_feature_method}',
                                       'epoch_{}'.format(epoch_id - 3))
         if os.path.exists(old_model_path):
-            shutil.rmtree(old_model_path)
+            # shutil.rmtree(old_model_path)
+            pass # by placebeyondtheclouds
     logger.info('已保存模型：{}'.format(model_path))

@@ -44,7 +44,7 @@ def infer_thread():
         d = np.concatenate(seg_data)
         # 删除旧的音频数据
         del all_data[:len(all_data) - infer_len]
-        label, score = predictor.predict(audio_data=d, sample_rate=samplerate)
+        label, score, result = predictor.predict(audio_data=d, sample_rate=samplerate)
         print(f'{int(time.time() - s)}s 预测结果标签为：{label}，得分：{score}')
 
 

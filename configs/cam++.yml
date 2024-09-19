@@ -25,11 +25,13 @@ dataset_conf:
     # 最长的音频长度
     max_duration: 20
   # 训练数据的数据列表路径
-  train_list: 'dataset/train_list.txt'
+  train_list: "../dataset/train_list.txt"
   # 测试数据的数据列表路径
-  test_list: 'dataset/test_list.txt'
+  test_list: "../dataset/test_list.txt"
   # 标签列表
-  label_list_path: 'dataset/label_list.txt'
+  label_list_path: "../dataset/label_list.txt"
+  validation_list: "../dataset/validation_list.txt" #using '../OOD_test.parquet'
+  tar_path: "../dataset/CHANGEME.tar"
 
 # 数据预处理参数
 preprocess_conf:
@@ -38,7 +40,7 @@ preprocess_conf:
   # 音频预处理方法，也可以叫特征提取方法
   # 当use_hf_model为False时，支持：MelSpectrogram、Spectrogram、MFCC、Fbank
   # 当use_hf_model为True时，指定的是HuggingFace的模型或者本地路径，比如facebook/w2v-bert-2.0或者./feature_models/w2v-bert-2.0
-  feature_method: 'Fbank'
+  feature_method: "Fbank"
   # 当use_hf_model为False时，设置API参数，更参数查看对应API，不清楚的可以直接删除该部分，直接使用默认值。
   # 当use_hf_model为True时，可以设置参数use_gpu，指定是否使用GPU提取特征
   method_args:
@@ -47,7 +49,7 @@ preprocess_conf:
 
 model_conf:
   # 所使用的模型
-  model: 'CAMPPlus'
+  model: "CAMPPlus"
   # 模型参数
   model_args:
     # 分类大小，如果为null，自动通过标签列表获取
@@ -55,13 +57,13 @@ model_conf:
 
 optimizer_conf:
   # 优化方法
-  optimizer: 'Adam'
+  optimizer: "Adam"
   # 优化方法参数
   optimizer_args:
     lr: 0.001
     weight_decay: !!float 1e-5
   # 学习率衰减函数，支持Pytorch支持的和项目提供的WarmupCosineSchedulerLR
-  scheduler: 'WarmupCosineSchedulerLR'
+  scheduler: "WarmupCosineSchedulerLR"
   # 学习率衰减函数参数
   scheduler_args:
     min_lr: !!float 1e-5
@@ -78,3 +80,22 @@ train_conf:
   # 训练的轮数
   max_epoch: 60
   log_interval: 10
+
+# make sure the server is running before each run
+mlflow_uri: "http://CHANGEME:5008"
+mlflow_experiment_name: "CHANGEME"
+
+# check all of the below before each run
+experiment_run: "train287"
+data_description:
+  data_raw_hours:
+  data_used_to_train: "100%"
+  data_cut_overlap: False
+  data_preprocessing: "6scut_numpy_resampy-16k min_duration=6"
+  data_filtering: "6s"
+  data_oversample: False
+  data_undersample: False
+  test_size: 0.01
+  train_audio_files_number: 60642
+  train_audio_files_hours: 101
+  comment: "growth 32"

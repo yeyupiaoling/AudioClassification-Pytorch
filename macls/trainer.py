@@ -24,6 +24,15 @@ from macls.optimizer import build_optimizer, build_lr_scheduler
 from macls.utils.checkpoint import load_pretrained, load_checkpoint, save_checkpoint
 from macls.utils.utils import dict_to_object, plot_confusion_matrix, print_arguments
 
+# by placebeyondtheclouds
+import mlflow
+import mlflow.pytorch
+from sklearn import metrics
+from sklearn.metrics import roc_curve, roc_auc_score, precision_recall_curve, f1_score, auc, confusion_matrix, classification_report, accuracy_score
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+# by placebeyondtheclouds
 
 class MAClsTrainer(object):
     def __init__(self, configs, use_gpu=True, data_augment_configs=None):
@@ -78,6 +87,54 @@ class MAClsTrainer(object):
         self.test_log_step, self.train_log_step = 0, 0
         self.stop_train, self.stop_eval = False, False
 
+
+
+        # by placebeyondtheclouds
+        self.experiment_name = self.configs.mlflow_experiment_name
+        self.mlflow_uri = self.configs.mlflow_uri
+        self.mlflow_training_parameters = {
+                "Batch Size": self.configs.dataset_conf.dataLoader.batch_size,
+                "train_loader_num_workers": self.configs.dataset_conf.dataLoader.num_workers,
+                "Epochs": self.configs.train_conf.max_epoch,
+                "Automatic Mixed Precision": self.configs.train_conf.enable_amp,
+                "Optimizer": self.configs.optimizer_conf.optimizer,
+                "Learning Rate": self.configs.optimizer_conf.learning_rate,
+                "weight_decay": self.configs.optimizer_conf.weight_decay,
+                "scheduler": self.configs.optimizer_conf.scheduler,
+                "scheduler_args.min_lr": self.configs.optimizer_conf.scheduler_args.min_lr,
+                "scheduler_args.max_lr": self.configs.optimizer_conf.scheduler_args.max_lr,
+                "scheduler_args.warmup_epoch": self.configs.optimizer_conf.scheduler_args.warmup_epoch,
+                "Model": self.configs.use_model,
+                "feature_method": self.configs.preprocess_conf.feature_method,
+                "use_dB_normalization": self.configs.dataset_conf.use_dB_normalization,
+                "speed_perturb": self.configs.dataset_conf.aug_conf.speed_perturb,
+                "volume_perturb": self.configs.dataset_conf.aug_conf.volume_perturb,
+                "volume_aug_prob": self.configs.dataset_conf.aug_conf.volume_aug_prob,
+                "noise_aug_prob": self.configs.dataset_conf.aug_conf.noise_aug_prob,
+                "use_spec_aug": self.configs.dataset_conf.use_spec_aug,
+                "data_raw_hours": self.configs.data_description.data_raw_hours,
+                "data_used_to_train": self.configs.data_description.data_used_to_train,
+                "data_cut_overlap": self.configs.data_description.data_cut_overlap,
+                "data_preprocessing": self.configs.data_description.data_preprocessing,
+                "data_filtering": self.configs.data_description.data_filtering,
+                "data_oversample": self.configs.data_description.data_oversample,
+                "data_undersample": self.configs.data_description.data_undersample,
+                "test_size": self.configs.data_description.test_size,
+                "experiment_run": self.configs.experiment_run,
+                "train_audio_files_number": self.configs.data_description.train_audio_files_number,
+                "train_audio_files_hours": self.configs.data_description.train_audio_files_hours,
+                "comment": self.configs.data_description.comment,
+                "model_growth_rate": self.configs.model_conf.growth_rate,
+                "train_max_duration": self.configs.dataset_conf.max_duration,
+                "train_min_duration": self.configs.dataset_conf.min_duration,
+                "test_max_duration": self.configs.dataset_conf.eval_conf.max_duration,
+                # "test_min_duration": self.configs.dataset_conf.eval_conf.min_duration,
+                "val_max_duration": self.configs.dataset_conf.val_conf.max_duration,
+                "val_min_duration": self.configs.dataset_conf.val_conf.min_duration,
+                }
+        self.eval_results_all = []
+         # by placebeyondtheclouds
+
     def __setup_dataloader(self, is_train=False):
         """ 获取数据加载器
 
@@ -95,6 +152,7 @@ class MAClsTrainer(object):
                                               audio_featurizer=self.audio_featurizer,
                                               aug_conf=self.data_augment_configs,
                                               mode='train',
+                                              tar_path=self.configs.dataset_conf.tar_path,
                                               **dataset_args)
             # 设置支持多卡训练
             train_sampler = RandomSampler(self.train_dataset)
@@ -112,11 +170,22 @@ class MAClsTrainer(object):
         self.test_dataset = MAClsDataset(data_list_path=self.configs.dataset_conf.test_list,
                                          audio_featurizer=self.audio_featurizer,
                                          mode='eval',
+                                         tar_path=self.configs.dataset_conf.tar_path,
                                          **dataset_args)
         self.test_loader = DataLoader(dataset=self.test_dataset,
                                       collate_fn=collate_fn,
                                       shuffle=False,
                                       **data_loader_args)
+        # by placebeyondtheclouds
+        self.val_dataset = MAClsDataset(data_list_path=self.configs.dataset_conf.validation_list,
+                                         audio_featurizer=self.audio_featurizer,
+                                         mode='val',
+                                         **dataset_args)
+        self.val_loader = DataLoader(dataset=self.val_dataset,
+                                      collate_fn=collate_fn,
+                                      shuffle=False,
+                                      **data_loader_args)
+        # by placebeyondtheclouds
 
     def extract_features(self, save_dir='dataset/features', max_duration=100):
         """ 提取特征保存文件
@@ -241,8 +310,12 @@ class MAClsTrainer(object):
                             f'speed: {train_speed:.2f} data/sec, eta: {eta_str}')
                 writer.add_scalar('Train/Loss', self.train_loss, self.train_log_step)
                 writer.add_scalar('Train/Accuracy', self.train_acc, self.train_log_step)
+                mlflow.log_metric('Train/Loss', self.train_loss, self.train_log_step) # by placebeyondtheclouds
+                mlflow.log_metric('Train/Accuracy', self.train_acc, self.train_log_step) # by placebeyondtheclouds
+
                 # 记录学习率
                 writer.add_scalar('Train/lr', self.scheduler.get_last_lr()[0], self.train_log_step)
+                mlflow.log_metric('Train/lr', self.scheduler.get_last_lr()[0], self.train_log_step) # by placebeyondthec
                 train_times, accuracies, loss_sum = [], [], []
                 self.train_log_step += 1
             start = time.time()
@@ -265,13 +338,37 @@ class MAClsTrainer(object):
         local_rank = 0
         writer = None
         if local_rank == 0:
-            # 日志记录器
-            writer = LogWriter(logdir=log_dir)
+            # considering multi-node training # by placebeyondtheclouds
+            world_rank = os.environ.get('RANK') # by placebeyondtheclouds
+            if world_rank is None or world_rank == '0': # by placebeyondtheclouds
+                # 日志记录器
+                writer = LogWriter(logdir='log')
 
         if nranks > 1 and self.use_gpu:
             # 初始化NCCL环境
             dist.init_process_group(backend='nccl')
             local_rank = int(os.environ["LOCAL_RANK"])
+            
+        # by placebeyondtheclouds
+        mlflow.set_tracking_uri(self.mlflow_uri)
+        experiment_id = mlflow.get_experiment_by_name(self.experiment_name)
+        if experiment_id is None and local_rank == 0:
+            # considering multi-node training
+            world_rank = os.environ.get('RANK')
+            if world_rank is None or world_rank == '0':
+                experiment_id = mlflow.create_experiment(self.experiment_name)
+        else:
+            experiment_id = experiment_id.experiment_id
+        #mlflow.set_experiment(self.experiment_name)
+        if local_rank == 0:
+            # considering multi-node training
+            world_rank = os.environ.get('RANK')
+            if world_rank is None or world_rank == '0':
+                if mlflow.active_run() is None:
+                    mlflow.start_run(experiment_id=experiment_id)
+                    mlflow.log_params(self.mlflow_training_parameters)
+        # by placebeyondtheclouds
+
 
         # 获取数据
         self.__setup_dataloader(is_train=True)
@@ -295,7 +392,11 @@ class MAClsTrainer(object):
         self.eval_loss, self.eval_acc = None, None
         self.test_log_step, self.train_log_step = 0, 0
         if local_rank == 0:
-            writer.add_scalar('Train/lr', self.scheduler.get_last_lr()[0], last_epoch)
+            # considering multi-node training # by placebeyondtheclouds
+            world_rank = os.environ.get('RANK') # by placebeyondtheclouds
+            if world_rank is None or world_rank == '0': # by placebeyondtheclouds
+                writer.add_scalar('Train/lr', self.scheduler.get_last_lr()[0], last_epoch)
+                mlflow.log_metric('Train/lr', self.scheduler.get_last_lr()[0], last_epoch) # by placebeyondtheclouds
         # 最大步数
         self.max_step = len(self.train_loader) * self.configs.train_conf.max_epoch
         self.train_step = max(last_epoch, 0) * len(self.train_loader)
@@ -308,14 +409,35 @@ class MAClsTrainer(object):
             self.__train_epoch(epoch_id=epoch_id, local_rank=local_rank, writer=writer, nranks=nranks)
             # 多卡训练只使用一个进程执行评估和保存模型
             if local_rank == 0:
-                if self.stop_eval: continue
-                logger.info('=' * 70)
-                self.eval_loss, self.eval_acc = self.evaluate()
-                logger.info('Test epoch: {}, time/epoch: {}, loss: {:.5f}, accuracy: {:.5f}'.format(
-                    epoch_id, str(timedelta(seconds=(time.time() - start_epoch))), self.eval_loss, self.eval_acc))
-                logger.info('=' * 70)
-                writer.add_scalar('Test/Accuracy', self.eval_acc, self.test_log_step)
-                writer.add_scalar('Test/Loss', self.eval_loss, self.test_log_step)
+                # considering multi-node training # by placebeyondtheclouds
+                world_rank = os.environ.get('RANK') # by placebeyondtheclouds
+                if world_rank is None or world_rank == '0': # by placebeyondtheclouds
+                    if self.stop_eval: continue
+                    logger.info('=' * 70)
+                    self.eval_loss, self.eval_acc, cm_plot_test = self.evaluate(save_plots_mlflow=str(epoch_id).zfill(2)) # by placebeyondtheclouds
+                    val_loss, val_acc, result_f1, result_acc, result_eer_fpr, resut_eer_thr, result_eer_fnr, result_roc_auc_score, result_pr_auc, cm_plot, roc_curve_plot = self.validate(save_plots_mlflow=str(epoch_id).zfill(2)) # by placebeyondtheclouds
+                    self.eval_results_all.append([epoch_id, loss, acc, val_loss, val_acc, result_f1, result_acc, result_eer_fpr, resut_eer_thr, result_eer_fnr, result_roc_auc_score, result_pr_auc]) # by placebeyondtheclouds
+                    logger.info('Test epoch: {}, time/epoch: {}, loss: {:.5f}, accuracy: {:.5f}'.format(
+                        epoch_id, str(timedelta(seconds=(time.time() - start_epoch))), self.eval_loss, self.eval_acc))
+                    logger.info('=' * 70)
+                    writer.add_scalar('Test/Accuracy', self.eval_acc, self.test_log_step)
+                    writer.add_scalar('Test/Loss', self.eval_loss, self.test_log_step)
+                    # by placebeyondtheclouds
+                    mlflow.log_metric('Test/Accuracy', self.eval_acc, self.test_log_step) 
+                    mlflow.log_metric('Test/Loss', self.eval_loss, self.test_log_step) 
+                    mlflow.log_metric('Val/loss', val_loss, self.test_log_step) 
+                    mlflow.log_metric('Val/acc', val_acc, self.test_log_step) 
+                    mlflow.log_metric('Val/F1 score', result_f1, self.test_log_step) 
+                    mlflow.log_metric('Val/Accuracy', result_acc, self.test_log_step) 
+                    mlflow.log_metric('Val/EER-fpr', result_eer_fpr, self.test_log_step) 
+                    mlflow.log_metric('Val/EER-threshold', resut_eer_thr, self.test_log_step) 
+                    mlflow.log_metric('Val/EER-fnr', result_eer_fnr, self.test_log_step) 
+                    mlflow.log_metric('Val/ROC AUC score', result_roc_auc_score, self.test_log_step) 
+                    mlflow.log_metric('Val/Precision Recall score', result_pr_auc, self.test_log_step) 
+                    mlflow.log_figure(cm_plot, 'val_epoch_'+str(epoch_id).zfill(2)+'_cm.png')
+                    mlflow.log_figure(roc_curve_plot, 'val_epoch_'+str(epoch_id).zfill(2)+'_roc_curve.png')
+                    mlflow.log_figure(cm_plot_test, 'test_epoch_'+str(epoch_id).zfill(2)+'_cm.png')
+                    # by placebeyondtheclouds
                 self.test_log_step += 1
                 self.model.train()
                 # # 保存最优模型
@@ -328,8 +450,21 @@ class MAClsTrainer(object):
                 save_checkpoint(configs=self.configs, model=self.model, optimizer=self.optimizer,
                                 amp_scaler=self.amp_scaler, save_model_path=save_model_path, epoch_id=epoch_id,
                                 accuracy=self.eval_acc)
+                # by placebeyondtheclouds
+        if local_rank == 0: # will only log the last run if training is restarted
+            # considering multi-node training
+            world_rank = os.environ.get('RANK')
+            if world_rank is None or world_rank == '0':
+                if mlflow.active_run():
+                    results_all = pd.DataFrame(self.eval_results_all, columns=['epoch_id', 'test_loss', 'test_acc', 'val_loss', 'val_acc', 'result_f1', 'result_acc', 'result_eer_fpr', 'resut_eer_thr', 'result_eer_fnr', 'result_roc_auc_score', 'result_pr_auc']) 
+                    fname = f'models/{self.configs.experiment_run}.csv'
+                    results_all.to_csv(fname, index=None)
+                    mlflow.log_table(data=results_all, artifact_file=f'{self.configs.experiment_run}.json')
+                    mlflow.log_artifact(local_path=fname)
+                    mlflow.end_run()
+                    print(f'finished {self.configs.experiment_run}')
 
-    def evaluate(self, resume_model=None, save_matrix_path=None):
+    def evaluate(self, resume_model=None, save_matrix_path=None, save_plots_mlflow=None): # by placebeyondtheclouds
         """
         评估模型
         :param resume_model: 所使用的模型
@@ -382,8 +517,30 @@ class MAClsTrainer(object):
                                       class_labels=self.class_labels)
             except Exception as e:
                 logger.error(f'保存混淆矩阵失败：{e}')
-        self.model.train()
-        return loss, acc
+        
+        # by placebeyondtheclouds
+        if save_plots_mlflow is not None:
+            cm = metrics.confusion_matrix(labels, preds) # variable name was changed from confusion_matrix to cm
+            # cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=confusion_matrix)
+            # fig, ax = plt.subplots(figsize=(4,4))
+            # cm_display.plot(ax=ax)
+            cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+            # cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = cm_normalized, display_labels = self.class_labels)
+            fig, ax = plt.subplots(figsize=(5,4), dpi=150)
+            sns.heatmap(data=cm_normalized, annot=True, annot_kws={"size":22}, fmt='.2f', ax=ax, xticklabels=self.class_labels, yticklabels=self.class_labels)
+            fig.suptitle(t=f'\n {self.configs.experiment_run} epoch_{save_plots_mlflow}, test \n loss: {round(loss,2)}, accuracy: {round(acc,2)}', x=0.5, y=1.01)
+            plt.ylabel('Actual labels')
+            plt.xlabel('Predicted labels')
+            fig.savefig(fname='temp.png', bbox_inches='tight', pad_inches=0)
+            # mlflow.log_figure(fig, os.path.join('plots', self.configs.experiment_run, 'epoch_'+save_plots_mlflow+'_cm.png'))
+            cm_plot_test = fig
+            plt.close()
+            self.model.train()
+            return loss, acc, cm_plot_test
+        else:
+            self.model.train()
+            return loss, acc
+        # by placebeyondtheclouds
 
     def export(self, save_model_path='models/', resume_model='models/EcapaTdnn_Fbank/best_model/'):
         """
@@ -409,3 +566,110 @@ class MAClsTrainer(object):
         os.makedirs(os.path.dirname(infer_model_path), exist_ok=True)
         torch.jit.save(infer_model, infer_model_path)
         logger.info("预测模型已保存：{}".format(infer_model_path))
+
+
+
+
+    # by placebeyondtheclouds
+    def validate(self, resume_model=None, save_plots_mlflow=None):
+        if self.validation_loader is None:
+            self.__setup_dataloader()
+        if self.model is None:
+            self.__setup_model(input_size=self.audio_featurizer.feature_dim)
+        if resume_model is not None:
+            if os.path.isdir(resume_model):
+                resume_model = os.path.join(resume_model, 'model.pth')
+            assert os.path.exists(resume_model), f"{resume_model} 模型不存在！"
+            model_state_dict = torch.load(resume_model)
+            self.model.load_state_dict(model_state_dict)
+            logger.info(f'成功加载模型：{resume_model}')
+        self.model.eval()
+        if isinstance(self.model, torch.nn.parallel.DistributedDataParallel):
+            eval_model = self.model.module
+        else:
+            eval_model = self.model
+        
+        preds_prob = []
+        accuracies, losses, preds, labels = [], [], [], []
+        with torch.no_grad():
+            for batch_id, (audio, label, input_lens_ratio) in enumerate(tqdm(self.validation_loader)):
+                audio = audio.to(self.device)
+                input_lens_ratio = input_lens_ratio.to(self.device)
+                label = label.to(self.device).long()
+                features, _ = self.audio_featurizer(audio, input_lens_ratio)
+                output = eval_model(features)
+                for one_output in output:
+                    result = torch.nn.functional.softmax(one_output, dim=-1)
+                    result = result.data.cpu().numpy()
+                    preds_prob.append(result)
+                los = self.loss(output, label)
+                # 计算准确率
+                acc = accuracy(output, label)
+                accuracies.append(acc)
+                # 模型预测标签
+                label = label.data.cpu().numpy()
+                output = output.data.cpu().numpy()
+                pred = np.argmax(output, axis=1)
+                preds.extend(pred.tolist())
+                # 真实标签
+                labels.extend(label.tolist())
+                losses.append(los.data.cpu().numpy())
+        loss = float(sum(losses) / len(losses))
+        acc = float(sum(accuracies) / len(accuracies))
+        # print(f'{labels[:5]=}')
+        # print(f'{preds[:5]=}')
+        result_f1 = f1_score(y_true=labels, y_pred=preds, average='weighted')
+        result_acc = accuracy_score(y_true=labels, y_pred=preds)            # sanity check, must be the same with acc (the original code calcucations) 
+        # print(f'{result_f1=}')
+        # print(f'{result_acc=}')
+        
+        preds_prob = np.array(preds_prob)[:,1]
+        # print(f'{preds_prob[:5]=}')
+        fpr, tpr, threshold = roc_curve(labels, preds_prob, pos_label=1)
+        fnr = 1 - tpr
+        eer_threshold = threshold[np.nanargmin(np.absolute((fnr - fpr)))]
+        EER = fpr[np.nanargmin(np.absolute((fnr - fpr)))]
+        EER_sanity = fnr[np.nanargmin(np.absolute((fnr - fpr)))]
+        precision, recall, threshold = precision_recall_curve(labels, preds_prob)
+
+        result_eer_fpr = EER
+        resut_eer_thr = eer_threshold
+        result_eer_fnr = EER_sanity
+        result_roc_auc_score = roc_auc_score(labels, preds_prob)
+        result_pr_auc = auc(recall, precision)
+
+        if save_plots_mlflow:
+            # cm
+            confusion_matrix = metrics.confusion_matrix(labels, preds)
+            # cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=confusion_matrix)
+            # fig, ax = plt.subplots(figsize=(4,4))
+            # cm_display.plot(ax=ax)
+            cm_normalized = confusion_matrix.astype('float') / confusion_matrix.sum(axis=1)[:, np.newaxis]
+            # cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = cm_normalized, display_labels = self.class_labels)
+            fig, ax = plt.subplots(figsize=(5,4), dpi=150)
+            sns.heatmap(data=cm_normalized, annot=True, annot_kws={"size":22}, fmt='.2f', ax=ax, xticklabels=self.class_labels, yticklabels=self.class_labels)
+            fig.suptitle(t=f'\n {self.configs.experiment_run} epoch_{save_plots_mlflow}, validation \n EER: {round(result_eer_fpr,2)}, F1: {round(result_f1,2)}, Accuracy: {round(result_acc,2)}', x=0.5, y=1.01)
+            plt.ylabel('Actual labels')
+            plt.xlabel('Predicted labels')
+            fig.savefig(fname='temp.png', bbox_inches='tight', pad_inches=0)
+            cm_plot = fig
+            plt.close()
+
+            # ROC curve
+            fig, ax = plt.subplots(figsize=(4,4), dpi=150)
+            ns_probs = [0 for _ in range(len(labels))] #no skill data
+            ns_fpr, ns_tpr, _ = roc_curve(labels, ns_probs) #no skill data
+            # fpr, tpr, threshold = roc_curve(labels, preds_prob)
+            ax.plot(ns_fpr, ns_tpr, linestyle='--', label='No Skill')
+            ax.plot(fpr, tpr, marker='.', label=f'epoch_{save_plots_mlflow}')
+            fig.suptitle(t=f'\n {self.configs.experiment_run} epoch_{save_plots_mlflow}, validation \n EER: {round(result_eer_fpr,2)}, F1: {round(result_f1,2)}, Accuracy: {round(result_acc,2)}', x=0.5, y=1.01)
+            plt.xlabel('False Positive Rate')
+            plt.ylabel('True Positive Rate')
+            plt.legend()
+            fig.savefig(fname='temp.png', bbox_inches='tight', pad_inches=0)
+            roc_curve_plot = fig
+            plt.close()
+        
+        self.model.train()
+        return loss, acc, result_f1, result_acc, result_eer_fpr, resut_eer_thr, result_eer_fnr, result_roc_auc_score, result_pr_auc, cm_plot, roc_curve_plot
+    # by placebeyondtheclouds

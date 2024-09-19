@@ -18,6 +18,6 @@ predictor = MAClsPredictor(configs=args.configs,
                            model_path=args.model_path,
                            use_gpu=args.use_gpu)
 
-label, score = predictor.predict(audio_data=args.audio_path)
+label, score, result = predictor.predict(audio_data=args.audio_path)
 
 print(f'音频：{args.audio_path} 的预测结果标签为：{label}，得分：{score}')
