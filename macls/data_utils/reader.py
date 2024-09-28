@@ -36,7 +36,7 @@ class MAClsDataset(Dataset):
             target_dB: 音量归一化的大小
         """
         super(MAClsDataset, self).__init__()
-        assert mode in ['train', 'eval', 'extract_feature']
+        assert mode in ['train', 'eval', 'extract_feature', 'val'] # by placebeyondtheclouds
         self.data_list_path = data_list_path
         self.max_duration = max_duration
         self.min_duration = min_duration
