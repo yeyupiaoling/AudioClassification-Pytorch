@@ -129,8 +129,8 @@ class MAClsTrainer(object):
                 "train_min_duration": self.configs.dataset_conf.min_duration,
                 "test_max_duration": self.configs.dataset_conf.eval_conf.max_duration,
                 # "test_min_duration": self.configs.dataset_conf.eval_conf.min_duration,
-                "val_max_duration": self.configs.dataset_conf.val_conf.max_duration,
-                "val_min_duration": self.configs.dataset_conf.val_conf.min_duration,
+                # "val_max_duration": self.configs.dataset_conf.val_conf.max_duration,
+                # "val_min_duration": self.configs.dataset_conf.val_conf.min_duration,
                 }
         self.eval_results_all = []
          # by placebeyondtheclouds
