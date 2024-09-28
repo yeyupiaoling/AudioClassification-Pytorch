@@ -570,7 +570,7 @@ class MAClsTrainer(object):
 
     # by placebeyondtheclouds
     def validate(self, resume_model=None, save_plots_mlflow=None):
-        if self.validation_loader is None:
+        if self.val_loader is None:
             self.__setup_dataloader()
         if self.model is None:
             self.__setup_model(input_size=self.audio_featurizer.feature_dim)
@@ -590,7 +590,7 @@ class MAClsTrainer(object):
         preds_prob = []
         accuracies, losses, preds, labels = [], [], [], []
         with torch.no_grad():
-            for batch_id, (audio, label, input_lens_ratio) in enumerate(tqdm(self.validation_loader)):
+            for batch_id, (audio, label, input_lens_ratio) in enumerate(tqdm(self.val_loader)):
                 audio = audio.to(self.device)
                 input_lens_ratio = input_lens_ratio.to(self.device)
                 label = label.to(self.device).long()
