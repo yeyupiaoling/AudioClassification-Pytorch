@@ -152,7 +152,6 @@ class MAClsTrainer(object):
                                               audio_featurizer=self.audio_featurizer,
                                               aug_conf=self.data_augment_configs,
                                               mode='train',
-                                              tar_path=self.configs.dataset_conf.tar_path,
                                               **dataset_args)
             # 设置支持多卡训练
             train_sampler = RandomSampler(self.train_dataset)
@@ -170,7 +169,6 @@ class MAClsTrainer(object):
         self.test_dataset = MAClsDataset(data_list_path=self.configs.dataset_conf.test_list,
                                          audio_featurizer=self.audio_featurizer,
                                          mode='eval',
-                                         tar_path=self.configs.dataset_conf.tar_path,
                                          **dataset_args)
         self.test_loader = DataLoader(dataset=self.test_dataset,
                                       collate_fn=collate_fn,
