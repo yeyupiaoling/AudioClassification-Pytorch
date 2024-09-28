@@ -590,17 +590,16 @@ class MAClsTrainer(object):
         preds_prob = []
         accuracies, losses, preds, labels = [], [], [], []
         with torch.no_grad():
-            for batch_id, (audio, label, input_lens_ratio) in enumerate(tqdm(self.val_loader)):
-                audio = audio.to(self.device)
-                input_lens_ratio = input_lens_ratio.to(self.device)
+            for batch_id, (features, label, input_lens) in enumerate(tqdm(self.test_loader)):
+                
+                features = features.to(self.device)
                 label = label.to(self.device).long()
-                features, _ = self.audio_featurizer(audio, input_lens_ratio)
                 output = eval_model(features)
+                los = self.loss(output, label)
                 for one_output in output:
                     result = torch.nn.functional.softmax(one_output, dim=-1)
                     result = result.data.cpu().numpy()
                     preds_prob.append(result)
-                los = self.loss(output, label)
                 # 计算准确率
                 acc = accuracy(output, label)
                 accuracies.append(acc)
@@ -612,8 +611,8 @@ class MAClsTrainer(object):
                 # 真实标签
                 labels.extend(label.tolist())
                 losses.append(los.data.cpu().numpy())
-        loss = float(sum(losses) / len(losses))
-        acc = float(sum(accuracies) / len(accuracies))
+        loss = float(sum(losses) / len(losses)) if len(losses) > 0 else -1
+        acc = float(sum(accuracies) / len(accuracies)) if len(accuracies) > 0 else -1
         # print(f'{labels[:5]=}')
         # print(f'{preds[:5]=}')
         result_f1 = f1_score(y_true=labels, y_pred=preds, average='weighted')
