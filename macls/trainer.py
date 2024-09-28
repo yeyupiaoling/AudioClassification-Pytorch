@@ -414,7 +414,7 @@ class MAClsTrainer(object):
                     logger.info('=' * 70)
                     self.eval_loss, self.eval_acc, cm_plot_test = self.evaluate(save_plots_mlflow=str(epoch_id).zfill(2)) # by placebeyondtheclouds
                     val_loss, val_acc, result_f1, result_acc, result_eer_fpr, resut_eer_thr, result_eer_fnr, result_roc_auc_score, result_pr_auc, cm_plot, roc_curve_plot = self.validate(save_plots_mlflow=str(epoch_id).zfill(2)) # by placebeyondtheclouds
-                    self.eval_results_all.append([epoch_id, loss, acc, val_loss, val_acc, result_f1, result_acc, result_eer_fpr, resut_eer_thr, result_eer_fnr, result_roc_auc_score, result_pr_auc]) # by placebeyondtheclouds
+                    self.eval_results_all.append([epoch_id, self.eval_loss, self.eval_acc, val_loss, val_acc, result_f1, result_acc, result_eer_fpr, resut_eer_thr, result_eer_fnr, result_roc_auc_score, result_pr_auc]) # by placebeyondtheclouds
                     logger.info('Test epoch: {}, time/epoch: {}, loss: {:.5f}, accuracy: {:.5f}'.format(
                         epoch_id, str(timedelta(seconds=(time.time() - start_epoch))), self.eval_loss, self.eval_acc))
                     logger.info('=' * 70)
