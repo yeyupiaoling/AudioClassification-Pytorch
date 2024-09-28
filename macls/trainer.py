@@ -107,7 +107,7 @@ class MAClsTrainer(object):
                 "Model": self.configs.model_conf.model,
                 "feature_method": self.configs.preprocess_conf.feature_method,
                 "use_dB_normalization": self.configs.dataset_conf.dataset.use_dB_normalization,
-                "speed_perturb": self.configs.speed,
+                "speed_perturb": self.configs.speed.prob,
                 "volume_perturb": self.configs.volume,
                 "volume_aug_prob": self.configs.dataset_conf.aug_conf.volume_aug_prob,
                 "noise_aug_prob": self.configs.noise.prob,
