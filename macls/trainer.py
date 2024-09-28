@@ -106,7 +106,7 @@ class MAClsTrainer(object):
                 "scheduler_args.warmup_epoch": self.configs.optimizer_conf.scheduler_args.warmup_epoch,
                 "Model": self.configs.model_conf.model,
                 "feature_method": self.configs.preprocess_conf.feature_method,
-                "use_dB_normalization": self.configs.dataset_conf.use_dB_normalization,
+                "use_dB_normalization": self.configs.dataset_conf.dataset.use_dB_normalization,
                 "speed_perturb": self.configs.dataset_conf.aug_conf.speed_perturb,
                 "volume_perturb": self.configs.dataset_conf.aug_conf.volume_perturb,
                 "volume_aug_prob": self.configs.dataset_conf.aug_conf.volume_aug_prob,

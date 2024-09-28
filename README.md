@@ -41,7 +41,7 @@ metrics are modified for binary classification. multiclass classification needs 
 
 - in predict.py
 
-  - edited predict and predict_batch functions to ALSO return the `result` variable (**breaking changes**), needed for my custom inference code
+  - edited predict and predict_batch functions to ALSO return the `result` variable, needed for my custom inference code
 
 - in \*.yml
 
