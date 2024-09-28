@@ -104,7 +104,7 @@ class MAClsTrainer(object):
                 "scheduler_args.min_lr": self.configs.optimizer_conf.scheduler_args.min_lr,
                 "scheduler_args.max_lr": self.configs.optimizer_conf.scheduler_args.max_lr,
                 "scheduler_args.warmup_epoch": self.configs.optimizer_conf.scheduler_args.warmup_epoch,
-                "Model": self.configs.use_model,
+                "Model": self.configs.model_conf.model,
                 "feature_method": self.configs.preprocess_conf.feature_method,
                 "use_dB_normalization": self.configs.dataset_conf.use_dB_normalization,
                 "speed_perturb": self.configs.dataset_conf.aug_conf.speed_perturb,
