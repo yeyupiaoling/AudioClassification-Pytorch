@@ -7,10 +7,12 @@ metrics are modified for binary classification. multiclass classification needs 
 ### need to install:
 
 - mlflow
-  - `conda install mlflow`
+  - `conda install conda-forge::mlflow`
 
 ### need to start before training:
 
+- edit .`./configs/.yml` files with current experiment parameters
+- `rm -rf ../log && mkdir ../log && rm -rf ../models && mkdir ../models`
 - `mlflow server --host CHANGEME --port 5008`
   - dashboard: http://CHANGEME:5008
   - make sure it's running:
@@ -21,7 +23,14 @@ metrics are modified for binary classification. multiclass classification needs 
 
 ### training
 
-- `CUDA_VISIBLE_DEVICES=0 torchrun --standalone --nnodes=1 --nproc_per_node=1 train.py`
+- `OMP_NUM_THREADS=4 CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 torchrun --standalone --nnodes=1 --nproc_per_node=1 train.py`
+
+### multi-node training
+
+- master node 192.168.x.x:
+  - `torchrun --nproc_per_node=1 --nnodes=2 --node_rank=0 --master_addr=192.168.x.x --master_port=1234 train.py`
+- worker nodes:
+  - `torchrun --nproc_per_node=1 --nnodes=2 --node_rank=1 --master_addr=192.168.x.x --master_port=1234 train.py`
 
 ### changes made to the code:
 
