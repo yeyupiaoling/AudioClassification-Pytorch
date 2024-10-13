@@ -20,6 +20,20 @@
 </div>
 
 
+# 目录
+
+- [前言](#前言)
+- [项目特性](#项目特性)
+- [模型测试表](#模型测试表)
+- [安装环境](#安装环境)
+- [创建数据](#创建数据)
+- [修改预处理方法（可选）](#修改预处理方法可选)
+- [提取特征（可选）](#提取特征可选)
+- [训练模型](#训练模型)
+- [评估模型](#评估模型)
+- [预测](#预测)
+- [其他功能](#其他功能)
+
 
 # 使用准备
 
@@ -65,7 +79,7 @@
 
  - 首先安装的是Pytorch的GPU版本，如果已经安装过了，请跳过。
 ```shell
-conda install pytorch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 pytorch-cuda=11.7 -c pytorch -c nvidia
+conda install pytorch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0  pytorch-cuda=11.8 -c pytorch -c nvidia
 ```
 
  - 安装macls库。
@@ -82,7 +96,7 @@ cd AudioClassification-Pytorch/
 pip install .
 ```
 
-## 准备数据
+## 创建数据
 
 生成数据列表，用于下一步的读取需要，`audio_path`为音频文件路径，用户需要提前把音频数据集存放在`dataset/audio`目录下，每个文件夹存放一个类别的音频数据，每条音频数据长度在3秒以上，如 `dataset/audio/鸟叫声/······`。`audio`是数据列表存放的位置，生成的数据类别的格式为 `音频路径\t音频对应的类别标签`，音频路径和标签用制表符 `\t`分开。读者也可以根据自己存放数据的方式修改以下函数。
 
@@ -134,7 +148,7 @@ python extract_features.py --configs=configs/cam++.yml --save_dir=dataset/featur
 2. 修改配置文件，将`dataset_conf.train_list`和`dataset_conf.test_list`修改为`train_list_features.txt`和`test_list_features.txt`。
 
 
-## 训练
+## 训练模型
 
 接着就可以开始训练模型了，创建 `train.py`。配置文件里面的参数一般不需要修改，但是这几个是需要根据自己实际的数据集进行调整的，首先最重要的就是分类大小`dataset_conf.num_class`，这个每个数据集的分类大小可能不一样，根据自己的实际情况设定。然后是`dataset_conf.batch_size`，如果是显存不够的话，可以减小这个参数。
 
@@ -278,7 +292,7 @@ visualdl --logdir=log --host=0.0.0.0
 
 
 
-# 评估
+# 评估模型
 
 执行下面命令执行评估。
 
