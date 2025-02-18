@@ -16,12 +16,14 @@ class MAClsPredictor:
     def __init__(self,
                  configs,
                  model_path='models/CAMPPlus_Fbank/best_model/',
-                 use_gpu=True):
+                 use_gpu=True,
+                 overwrites=None):
         """
         声音分类预测工具
         :param configs: 配置参数
         :param model_path: 导出的预测模型文件夹路径
         :param use_gpu: 是否使用GPU预测
+        :param overwrites: 覆盖配置文件中的参数，比如"train_conf.max_epoch=100"，多个用逗号隔开
         """
         if use_gpu:
             assert (torch.cuda.is_available()), 'GPU不可用'
@@ -33,8 +35,19 @@ class MAClsPredictor:
         if isinstance(configs, str):
             with open(configs, 'r', encoding='utf-8') as f:
                 configs = yaml.load(f.read(), Loader=yaml.FullLoader)
-            print_arguments(configs=configs)
         self.configs = dict_to_object(configs)
+        # 覆盖配置文件中的参数
+        if overwrites:
+            overwrites = overwrites.split(",")
+            for overwrite in overwrites:
+                keys, v = overwrite.strip().split("=")
+                attrs = keys.split('.')
+                current_level = self.configs
+                for attr in attrs[:-1]:
+                    current_level = getattr(current_level, attr)
+                setattr(current_level, attrs[-1], eval(v))
+        # 打印配置信息
+        print_arguments(configs=self.configs)
         # 获取特征器
         self._audio_featurizer = AudioFeaturizer(feature_method=self.configs.preprocess_conf.feature_method,
                                                  use_hf_model=self.configs.preprocess_conf.get('use_hf_model', False),
