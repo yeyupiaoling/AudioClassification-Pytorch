@@ -105,3 +105,27 @@ def plot_confusion_matrix(cm, save_path, class_labels, show=False):
     if show:
         # 显示图片
         plt.show()
+
+
+# 根据a的类型，将b转换为相应的类型
+def convert_string_based_on_type(a, b):
+    if isinstance(a, int):
+        try:
+            b = int(b)
+        except ValueError:
+            logger.error("无法将字符串转换为整数")
+    elif isinstance(a, float):
+        try:
+            b = float(b)
+        except ValueError:
+            logger.error("无法将字符串转换为浮点数")
+    elif isinstance(a, str):
+        return b
+    elif isinstance(a, bool):
+        b = b.lower() == 'true'
+    else:
+        try:
+            b = eval(b)
+        except Exception as e:
+            logger.exception("无法将字符串转换为其他类型，将忽略该参数类型转换")
+    return b

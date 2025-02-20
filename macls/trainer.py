@@ -22,7 +22,7 @@ from macls.metric.metrics import accuracy
 from macls.models import build_model
 from macls.optimizer import build_optimizer, build_lr_scheduler
 from macls.utils.checkpoint import load_pretrained, load_checkpoint, save_checkpoint
-from macls.utils.utils import dict_to_object, plot_confusion_matrix, print_arguments
+from macls.utils.utils import dict_to_object, plot_confusion_matrix, print_arguments, convert_string_based_on_type
 
 
 class MAClsTrainer(object):
@@ -50,12 +50,13 @@ class MAClsTrainer(object):
         if overwrites:
             overwrites = overwrites.split(",")
             for overwrite in overwrites:
-                keys, v = overwrite.strip().split("=")
+                keys, value = overwrite.strip().split("=")
                 attrs = keys.split('.')
                 current_level = self.configs
                 for attr in attrs[:-1]:
                     current_level = getattr(current_level, attr)
-                setattr(current_level, attrs[-1], eval(v))
+                before_value = getattr(current_level, attrs[-1])
+                setattr(current_level, attrs[-1], convert_string_based_on_type(before_value, value))
         # 打印配置信息
         print_arguments(configs=self.configs)
         self.model = None

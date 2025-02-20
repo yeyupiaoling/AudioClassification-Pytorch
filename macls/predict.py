@@ -9,7 +9,7 @@ from loguru import logger
 from yeaudio.audio import AudioSegment
 from macls.data_utils.featurizer import AudioFeaturizer
 from macls.models import build_model
-from macls.utils.utils import dict_to_object, print_arguments
+from macls.utils.utils import dict_to_object, print_arguments, convert_string_based_on_type
 
 
 class MAClsPredictor:
@@ -40,12 +40,13 @@ class MAClsPredictor:
         if overwrites:
             overwrites = overwrites.split(",")
             for overwrite in overwrites:
-                keys, v = overwrite.strip().split("=")
+                keys, value = overwrite.strip().split("=")
                 attrs = keys.split('.')
                 current_level = self.configs
                 for attr in attrs[:-1]:
                     current_level = getattr(current_level, attr)
-                setattr(current_level, attrs[-1], eval(v))
+                before_value = getattr(current_level, attrs[-1])
+                setattr(current_level, attrs[-1], convert_string_based_on_type(before_value, value))
         # 打印配置信息
         print_arguments(configs=self.configs)
         # 获取特征器
