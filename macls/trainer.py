@@ -1,5 +1,6 @@
 import os
 import platform
+import sys
 import time
 from datetime import timedelta
 
@@ -26,13 +27,21 @@ from macls.utils.utils import dict_to_object, plot_confusion_matrix, print_argum
 
 
 class MAClsTrainer(object):
-    def __init__(self, configs, use_gpu=True, data_augment_configs=None, overwrites=None):
-        """ macls集成工具类
+    def __init__(self,
+                 configs,
+                 use_gpu=True,
+                 data_augment_configs=None,
+                 num_class=None,
+                 overwrites=None,
+                 log_level="info"):
+        """声音分类训练工具类
 
-        :param configs: 配置字典
+        :param configs: 配置文件路径，或者模型名称，如果是模型名称则会使用默认的配置文件
         :param use_gpu: 是否使用GPU训练模型
         :param data_augment_configs: 数据增强配置字典或者其文件路径
+        :param num_class: 分类大小，对应配置文件中的model_conf.model_args.num_class
         :param overwrites: 覆盖配置文件中的参数，比如"train_conf.max_epoch=100"，多个用逗号隔开
+        :param log_level: 打印的日志等级，可选值有："debug", "info", "warning", "error"
         """
         if use_gpu:
             assert (torch.cuda.is_available()), 'GPU不可用'
@@ -41,11 +50,21 @@ class MAClsTrainer(object):
             os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
             self.device = torch.device("cpu")
         self.use_gpu = use_gpu
+        self.log_level = log_level.upper()
+        logger.remove()
+        logger.add(sink=sys.stdout, level=self.log_level)
         # 读取配置文件
         if isinstance(configs, str):
+            # 获取当前程序绝对路径
+            absolute_path = os.path.dirname(__file__)
+            # 获取默认配置文件路径
+            config_path = os.path.join(absolute_path, f"configs/{configs}.yml")
+            configs = config_path if os.path.exists(config_path) else configs
             with open(configs, 'r', encoding='utf-8') as f:
                 configs = yaml.load(f.read(), Loader=yaml.FullLoader)
         self.configs = dict_to_object(configs)
+        if num_class is not None:
+            self.configs.model_conf.model_args.num_class = num_class
         # 覆盖配置文件中的参数
         if overwrites:
             overwrites = overwrites.split(",")
@@ -178,9 +197,10 @@ class MAClsTrainer(object):
             self.configs.model_conf.model_args.num_class = len(self.class_labels)
         # 获取模型
         self.model = build_model(input_size=input_size, configs=self.configs)
-        # 打印模型信息，98是长度，这个取决于输入的音频长度
         self.model.to(self.device)
-        summary(self.model, input_size=(1, 98, input_size))
+        if self.log_level == "DEBUG" or self.log_level == "INFO":
+            # 打印模型信息，98是长度，这个取决于输入的音频长度
+            summary(self.model, input_size=(1, 98, input_size))
         # 使用Pytorch2.0的编译器
         if self.configs.train_conf.use_compile and torch.__version__ >= "2" and platform.system().lower() == 'windows':
             self.model = torch.compile(self.model, mode="reduce-overhead")
@@ -271,12 +291,14 @@ class MAClsTrainer(object):
     def train(self,
               save_model_path='models/',
               log_dir='log/',
+              max_epoch=None,
               resume_model=None,
               pretrained_model=None):
         """
         训练模型
         :param save_model_path: 模型保存的路径
         :param log_dir: 保存VisualDL日志文件的路径
+        :param max_epoch: 最大训练轮数，对应配置文件中的train_conf.max_epoch
         :param resume_model: 恢复训练，当为None则不使用预训练模型
         :param pretrained_model: 预训练模型的路径，当为None则不使用预训练模型
         """
@@ -298,7 +320,7 @@ class MAClsTrainer(object):
         # 获取模型
         self.__setup_model(input_size=self.audio_featurizer.feature_dim, is_train=True)
         # 加载预训练模型
-        self.model = load_pretrained(model=self.model, pretrained_model=pretrained_model)
+        self.model = load_pretrained(model=self.model, pretrained_model=pretrained_model, use_gpu=self.use_gpu)
         # 加载恢复模型
         self.model, self.optimizer, self.amp_scaler, self.scheduler, last_epoch, best_acc = \
             load_checkpoint(configs=self.configs, model=self.model, optimizer=self.optimizer,
@@ -316,6 +338,8 @@ class MAClsTrainer(object):
         self.test_log_step, self.train_log_step = 0, 0
         if local_rank == 0:
             writer.add_scalar('Train/lr', self.scheduler.get_last_lr()[0], last_epoch)
+        if max_epoch is not None:
+            self.configs.train_conf.max_epoch = max_epoch
         # 最大步数
         self.max_step = len(self.train_loader) * self.configs.train_conf.max_epoch
         self.train_step = max(last_epoch, 0) * len(self.train_loader)
@@ -364,7 +388,7 @@ class MAClsTrainer(object):
             if os.path.isdir(resume_model):
                 resume_model = os.path.join(resume_model, 'model.pth')
             assert os.path.exists(resume_model), f"{resume_model} 模型不存在！"
-            model_state_dict = torch.load(resume_model)
+            model_state_dict = torch.load(resume_model, weights_only=False)
             self.model.load_state_dict(model_state_dict)
             logger.info(f'成功加载模型：{resume_model}')
         self.model.eval()
@@ -375,7 +399,7 @@ class MAClsTrainer(object):
 
         accuracies, losses, preds, labels = [], [], [], []
         with torch.no_grad():
-            for batch_id, (features, label, input_lens) in enumerate(tqdm(self.test_loader)):
+            for batch_id, (features, label, input_lens) in enumerate(tqdm(self.test_loader, desc='执行评估')):
                 if self.stop_eval: break
                 features = features.to(self.device)
                 label = label.to(self.device).long()

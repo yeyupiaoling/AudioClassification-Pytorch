@@ -1,8 +1,14 @@
+import shutil
+
 from setuptools import setup, find_packages
 
 import macls
 
 VERSION = macls.__version__
+
+# 复制配置文件到项目目录下
+shutil.rmtree('./macls/configs/', ignore_errors=True)
+shutil.copytree('./configs/', './macls/configs/')
 
 
 def readme():
@@ -21,6 +27,7 @@ if __name__ == "__main__":
     setup(
         name='macls',
         packages=find_packages(),
+        package_data={'': ['configs/*']},
         author='yeyupiaoling',
         version=VERSION,
         install_requires=parse_requirements(),
@@ -44,3 +51,4 @@ if __name__ == "__main__":
         ],
         license='Apache License 2.0',
         ext_modules=[])
+    shutil.rmtree('./macls/configs/', ignore_errors=True)

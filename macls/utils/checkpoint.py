@@ -7,11 +7,13 @@ from loguru import logger
 from macls import __version__
 
 
-def load_pretrained(model, pretrained_model):
+def load_pretrained(model, pretrained_model, use_gpu=True):
     """加载预训练模型
 
     :param model: 使用的模型
     :param pretrained_model: 预训练模型路径
+    :param use_gpu: 模型是否使用GPU
+    :return: 加载的模型
     """
     # 加载预训练模型
     if pretrained_model is None: return model
@@ -22,7 +24,7 @@ def load_pretrained(model, pretrained_model):
         model_dict = model.module.state_dict()
     else:
         model_dict = model.state_dict()
-    if torch.cuda.is_available():
+    if torch.cuda.is_available() and use_gpu:
         model_state_dict = torch.load(pretrained_model, weights_only=False)
     else:
         model_state_dict = torch.load(pretrained_model, weights_only=False, map_location='cpu')
@@ -67,15 +69,15 @@ def load_checkpoint(configs, model, optimizer, amp_scaler, scheduler,
     def load_model(model_path):
         assert os.path.exists(os.path.join(model_path, 'model.pth')), "模型参数文件不存在！"
         assert os.path.exists(os.path.join(model_path, 'optimizer.pth')), "优化方法参数文件不存在！"
-        state_dict = torch.load(os.path.join(model_path, 'model.pth'))
+        state_dict = torch.load(os.path.join(model_path, 'model.pth'), weights_only=False)
         if isinstance(model, torch.nn.parallel.DistributedDataParallel):
             model.module.load_state_dict(state_dict)
         else:
             model.load_state_dict(state_dict)
-        optimizer.load_state_dict(torch.load(os.path.join(model_path, 'optimizer.pth')))
+        optimizer.load_state_dict(torch.load(os.path.join(model_path, 'optimizer.pth'), weights_only=False))
         # 自动混合精度参数
         if amp_scaler is not None and os.path.exists(os.path.join(model_path, 'scaler.pth')):
-            amp_scaler.load_state_dict(torch.load(os.path.join(model_path, 'scaler.pth')))
+            amp_scaler.load_state_dict(torch.load(os.path.join(model_path, 'scaler.pth')), weights_only=False)
         with open(os.path.join(model_path, 'model.state'), 'r', encoding='utf-8') as f:
             json_data = json.load(f)
             last_epoch = json_data['last_epoch']
