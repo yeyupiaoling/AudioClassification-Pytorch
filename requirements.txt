@@ -7,11 +7,11 @@ resampy>=0.2.2
 numba>=0.53.0
 pydub~=0.25.1
 matplotlib>=3.5.2
-pillow>=10.0.1
+pillow>=10.3.0
 tqdm>=4.66.3
 visualdl==2.5.3
 pyyaml>=5.4.1
 scikit-learn>=1.0.2
 torchinfo>=1.7.2
 loguru>=0.7.2
-yeaudio>=0.0.2
+yeaudio>=0.0.7
