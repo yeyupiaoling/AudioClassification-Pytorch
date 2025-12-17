@@ -15,8 +15,8 @@
 **欢迎大家扫码入知识星球或者QQ群讨论，知识星球里面提供项目的模型文件和博主其他相关项目的模型文件，也包括其他一些资源。**
 
 <div align="center">
-  <img src="https://yeyupiaoling.cn/zsxq.png" alt="知识星球" width="400">
-  <img src="https://yeyupiaoling.cn/qq.png" alt="QQ群" width="400">
+  <img src="https://yeyupiaoling.cn/zsxq.jpg" alt="知识星球" width="400">
+  <img src="https://yeyupiaoling.cn/qq.jpg" alt="QQ群" width="400">
 </div>
 
 
@@ -362,7 +362,7 @@ python infer_record.py --record_seconds=3
 <br/>
 <div align="center">
 <p>打赏一块钱支持一下作者</p>
-<img src="https://yeyupiaoling.cn/reward.png" alt="打赏作者" width="400">
+<img src="https://yeyupiaoling.cn/reward.jpg" alt="打赏作者" width="400">
 </div>
 
 # 参考资料
